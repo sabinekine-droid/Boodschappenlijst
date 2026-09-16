@@ -184,17 +184,12 @@
 </div>
 
 <script type="module">
-/* =====================================================================
-   FIREBASE SETUP — vul dit in met je eigen project
-   ===================================================================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, setDoc, deleteDoc, getDoc, onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 1) Plak hier de firebaseConfig die je uit de Firebase console kopieert
-//    (Project instellingen > Jouw apps > Web-app).
 const firebaseConfig = {
   apiKey: "AIzaSyA345i6Q0yVOvW3FymP6AKFGkgFEyA5Uq0",
   authDomain: "boodschappenlijstje-24b03.firebaseapp.com",
@@ -219,9 +214,6 @@ try {
   firebaseError = e;
 }
 
-/* =====================================================================
-   Helpers
-   ===================================================================== */
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 function initials(name) { return (name || '?').trim().slice(0, 1).toUpperCase(); }
 function itemMeta(item) {
@@ -263,9 +255,6 @@ function icon(name, size) {
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (paths[name] || '') + '</svg>';
 }
 
-/* =====================================================================
-   State
-   ===================================================================== */
 const state = {
   members: [], items: [], log: [], cards: [],
   currentMemberId: localStorage.getItem('current-member-id') || null,
@@ -285,9 +274,6 @@ function emptyStateHTML(iconSvg, title, text) {
   return '<div class="empty-state"><div class="empty-icon">' + iconSvg + '</div><h3>' + esc(title) + '</h3><p>' + esc(text) + '</p></div>';
 }
 
-/* =====================================================================
-   Main views
-   ===================================================================== */
 function renderTopbar() {
   const m = currentMember();
   document.getElementById('topbar-root').innerHTML =
@@ -407,9 +393,6 @@ function renderApp() {
   renderNav();
 }
 
-/* =====================================================================
-   Sheets
-   ===================================================================== */
 function sheetWrap(titleText, bodyHTML, closable) {
   return (
     '<div class="sheet-backdrop">' +
@@ -612,11 +595,6 @@ document.getElementById('sheet-root').addEventListener('click', (e) => {
   }
 });
 
-/* =====================================================================
-   Data actions — these write to Firestore; the onSnapshot listeners
-   further down pick the change up (on every phone, incl. this one)
-   and re-render automatically.
-   ===================================================================== */
 async function pickMember(id) {
   state.currentMemberId = id;
   localStorage.setItem('current-member-id', id);
@@ -682,9 +660,6 @@ async function deleteCard(id) {
   try { await deleteDoc(doc(db, 'cardImages', id)); } catch (e) { /* ignore */ }
 }
 
-/* =====================================================================
-   Event delegation
-   ===================================================================== */
 document.body.addEventListener('submit', async (e) => {
   if (e.target.matches && e.target.matches('[data-action="submit-add-item"]')) {
     e.preventDefault();
@@ -783,10 +758,6 @@ document.body.addEventListener('click', async (e) => {
   }
 });
 
-/* =====================================================================
-   Firestore realtime listeners — this is what makes both phones
-   see the same list live, without refreshing.
-   ===================================================================== */
 const ready = { members: false, items: false, log: false, cards: false };
 function checkReady() {
   if (Object.values(ready).every(Boolean)) {
@@ -837,7 +808,9 @@ function showFatalError(err) {
   console.error(err);
   const el = document.getElementById('loading-view');
   el.className = 'loading-wrap error';
-  el.textContent = 'Kan niet verbinden met de gedeelde lijst. Controleer je internetverbinding en of firebaseConfig correct is ingevuld.';
+  const code = err && err.code ? err.code : '(geen code)';
+  const msg = err && err.message ? err.message : String(err);
+  el.textContent = 'DEBUG: ' + code + ' - ' + msg;
 }
 
 if (firebaseReady) {
