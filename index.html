@@ -191,12 +191,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA345i6Q0yVOvW3FymP6AKFGkgFEyA5Uq0",
-  authDomain: "boodschappenlijstje-24b03.firebaseapp.com",
-  projectId: "boodschappenlijstje-24b03",
-  storageBucket: "boodschappenlijstje-24b03.firebasestorage.app",
-  messagingSenderId: "444246536340",
-  appId: "1:444246536340:web:7c811767c2182e59c10481",
+  apiKey: "AIzaSyDWU2UZ2LnyjDsUj-ATgsaH00FFCw9plSY",
+  authDomain: "boodschappenlijstje-a1b57.firebaseapp.com",
+  projectId: "boodschappenlijstje-a1b57",
+  storageBucket: "boodschappenlijstje-a1b57.firebasestorage.app",
+  messagingSenderId: "106584818891",
+  appId: "1:106584818891:web:492715147cfa2b78a0074e",
+  measurementId: "G-WY061VB75F"
 };
 
 let db = null;
@@ -808,9 +809,7 @@ function showFatalError(err) {
   console.error(err);
   const el = document.getElementById('loading-view');
   el.className = 'loading-wrap error';
-  const code = err && err.code ? err.code : '(geen code)';
-  const msg = err && err.message ? err.message : String(err);
-  el.textContent = 'DEBUG: ' + code + ' - ' + msg;
+  el.textContent = 'Kan niet verbinden met de gedeelde lijst. Controleer je internetverbinding en of firebaseConfig correct is ingevuld.';
 }
 
 if (firebaseReady) {
@@ -821,3 +820,4 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
+
