@@ -167,6 +167,8 @@
   }
 
   .card-detail { display: flex; flex-direction: column; gap: 14px; }
+  .code-render-wrap { display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 14px; padding: 18px 10px; min-height: 120px; }
+  .qr-holder img { display: block; }
   .card-detail-img { width: 100%; border-radius: 14px; display: block; }
   .card-detail-placeholder {
     width: 100%; aspect-ratio: 1.586; border-radius: 14px; display: flex; align-items: center; justify-content: center;
@@ -186,6 +188,8 @@
   <div id="sheet-root"></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -448,11 +452,14 @@ function addCardSheetHTML() {
     '<div class="stack">' +
       '<label class="field-label">Naam winkel</label>' +
       '<input id="card-name-input" class="text-input" placeholder="Bijv. Delhaize" autocomplete="off" />' +
-      '<span class="field-label">Foto van de kaart</span>' +
-      '<div id="card-photo-wrap">' +
-        '<button class="btn-secondary full" id="choose-photo-btn" type="button">' + icon('upload', 18) + ' Kies foto</button>' +
+      '<span class="field-label">Soort code</span>' +
+      '<div class="segmented" style="margin:0;">' +
+        '<button type="button" class="active" id="codetype-barcode-btn" data-codetype="barcode">Streepjescode</button>' +
+        '<button type="button" id="codetype-qr-btn" data-codetype="qr">QR-code</button>' +
       '</div>' +
-      '<input id="card-file-input" type="file" accept="image/*" class="hidden-input" />' +
+      '<label class="field-label">Nummer / code</label>' +
+      '<input id="card-code-input" class="text-input" placeholder="Bijv. 2100012345678" autocomplete="off" inputmode="text" />' +
+      '<p class="hint">Dit nummer staat onder de streepjescode op je pas, of je vindt 'm in de Klarna-app bij de kaartdetails.</p>' +
       '<span class="field-label">Kleur van de knop</span>' +
       '<div class="color-row">' +
         '<input id="card-color-input" type="color" value="#3F6B4F" class="color-input" />' +
@@ -465,13 +472,12 @@ function addCardSheetHTML() {
 
 function cardDetailSheetHTML(sheet) {
   const card = sheet.card;
+  const hasCode = !!card.codeValue;
   const body =
     '<div class="card-detail">' +
-      (sheet.image
-        ? '<img src="' + sheet.image + '" alt="' + esc(card.name) + '" class="card-detail-img"/>'
-        : (sheet.imageLoading
-            ? '<div class="card-detail-placeholder" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">…</div>'
-            : '<div class="card-detail-placeholder" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">' + esc(card.name) + '</div>')) +
+      (hasCode
+        ? '<div class="code-render-wrap" id="code-render-wrap"></div>'
+        : '<div class="card-detail-placeholder" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">' + esc(card.name) + '</div>') +
       '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
     '</div>';
   return sheetWrap(card.name, body, true);
@@ -497,6 +503,28 @@ function renderSheetRoot() {
     wireAddCardSheet();
   } else if (state.sheet.type === 'cardDetail') {
     root.innerHTML = cardDetailSheetHTML(state.sheet);
+    renderCodeForCard(state.sheet.card);
+  }
+}
+
+function renderCodeForCard(card) {
+  const wrap = document.getElementById('code-render-wrap');
+  if (!wrap || !card.codeValue) return;
+  wrap.innerHTML = '';
+  if (card.codeType === 'qr') {
+    const holder = document.createElement('div');
+    holder.className = 'qr-holder';
+    wrap.appendChild(holder);
+    try {
+      new QRCode(holder, { text: card.codeValue, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+    } catch (e) { wrap.innerHTML = '<p class="hint">Kon QR-code niet tonen.</p>'; }
+  } else {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'barcode-svg';
+    wrap.appendChild(svg);
+    try {
+      JsBarcode(svg, card.codeValue, { format: 'CODE128', width: 2.4, height: 90, displayValue: true, margin: 10 });
+    } catch (e) { wrap.innerHTML = '<p class="hint">Kon streepjescode niet tonen.</p>'; }
   }
 }
 
@@ -511,71 +539,31 @@ function triggerSaveMember() {
 }
 
 function wireAddCardSheet() {
-  let addCardImageData = null;
   let addCardColor = '#3F6B4F';
+  let addCardCodeType = 'barcode';
 
   const nameInput = document.getElementById('card-name-input');
-  const fileInput = document.getElementById('card-file-input');
-  const chooseBtn = document.getElementById('choose-photo-btn');
+  const codeInput = document.getElementById('card-code-input');
+  const barcodeBtn = document.getElementById('codetype-barcode-btn');
+  const qrBtn = document.getElementById('codetype-qr-btn');
   const colorInput = document.getElementById('card-color-input');
   const colorPreview = document.getElementById('card-color-preview');
   const saveBtn = document.getElementById('save-card-btn');
-  const photoWrap = document.getElementById('card-photo-wrap');
 
   nameInput.focus();
   nameInput.addEventListener('input', () => { colorPreview.textContent = nameInput.value.trim() || 'Voorbeeld'; });
-  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); codeInput.focus(); } });
+  codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
 
-  chooseBtn.addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const maxW = 480;
-        const scale = Math.min(1, maxW / img.width);
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.className = 'pick-canvas picking';
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        addCardImageData = canvas.toDataURL('image/jpeg', 0.85);
-
-        photoWrap.innerHTML = '';
-        photoWrap.appendChild(canvas);
-        const hint = document.createElement('p');
-        hint.className = 'hint';
-        hint.innerHTML = icon('pipette', 14) + ' Tik op de foto om de kleur van de knop te kiezen';
-        photoWrap.appendChild(hint);
-        const otherBtn = document.createElement('button');
-        otherBtn.type = 'button';
-        otherBtn.className = 'btn-secondary full';
-        otherBtn.textContent = 'Andere foto kiezen';
-        otherBtn.addEventListener('click', () => fileInput.click());
-        photoWrap.appendChild(otherBtn);
-
-        canvas.addEventListener('click', (ev) => {
-          const rect = canvas.getBoundingClientRect();
-          const scaleX = canvas.width / rect.width;
-          const scaleY = canvas.height / rect.height;
-          const x = Math.floor((ev.clientX - rect.left) * scaleX);
-          const y = Math.floor((ev.clientY - rect.top) * scaleY);
-          const d = ctx.getImageData(x, y, 1, 1).data;
-          const hex = '#' + [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, '0')).join('');
-          addCardColor = hex;
-          colorInput.value = hex;
-          colorPreview.style.background = hex;
-          colorPreview.style.color = textColorFor(hex);
-        });
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
+  barcodeBtn.addEventListener('click', () => {
+    addCardCodeType = 'barcode';
+    barcodeBtn.classList.add('active');
+    qrBtn.classList.remove('active');
+  });
+  qrBtn.addEventListener('click', () => {
+    addCardCodeType = 'qr';
+    qrBtn.classList.add('active');
+    barcodeBtn.classList.remove('active');
   });
 
   colorInput.addEventListener('input', () => {
@@ -587,8 +575,9 @@ function wireAddCardSheet() {
   saveBtn.addEventListener('click', async () => {
     const name = nameInput.value.trim();
     if (!name) { nameInput.focus(); return; }
+    const codeValue = codeInput.value.trim();
     saveBtn.disabled = true;
-    await saveNewCard({ name, color: addCardColor, image: addCardImageData });
+    await saveNewCard({ name, color: addCardColor, codeType: addCardCodeType, codeValue });
   });
 }
 
@@ -649,19 +638,17 @@ async function purgeLogItem(id) {
   await deleteDoc(doc(db, 'shoppingLog', id));
 }
 
-async function saveNewCard({ name, color, image }) {
+async function saveNewCard({ name, color, codeType, codeValue }) {
   const id = uid();
   state.sheet = null;
   renderSheetRoot();
-  await setDoc(doc(db, 'loyaltyCards', id), { name, color });
-  if (image) { await setDoc(doc(db, 'cardImages', id), { image }); }
+  await setDoc(doc(db, 'loyaltyCards', id), { name, color, codeType: codeType || 'barcode', codeValue: codeValue || '' });
 }
 
 async function deleteCard(id) {
   state.sheet = null;
   renderSheetRoot();
   await deleteDoc(doc(db, 'loyaltyCards', id));
-  try { await deleteDoc(doc(db, 'cardImages', id)); } catch (e) { /* ignore */ }
 }
 
 document.body.addEventListener('submit', async (e) => {
@@ -742,18 +729,8 @@ document.body.addEventListener('click', async (e) => {
     case 'open-card': {
       const card = state.cards.find((c) => c.id === id);
       if (!card) return;
-      state.sheet = { type: 'cardDetail', card, image: null, imageLoading: true, closable: true };
+      state.sheet = { type: 'cardDetail', card, closable: true };
       renderSheetRoot();
-      let img = null;
-      try {
-        const snap = await getDoc(doc(db, 'cardImages', id));
-        img = snap.exists() ? snap.data().image : null;
-      } catch (err) { img = null; }
-      if (state.sheet && state.sheet.type === 'cardDetail' && state.sheet.card.id === id) {
-        state.sheet.image = img;
-        state.sheet.imageLoading = false;
-        renderSheetRoot();
-      }
       break;
     }
     case 'delete-card':
@@ -823,5 +800,4 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
-
 
