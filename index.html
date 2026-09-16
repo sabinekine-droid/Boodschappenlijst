@@ -11,7 +11,7 @@
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.3/JsBarcode.all.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
@@ -115,9 +115,14 @@
 
   .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
   .loyalty-card {
+    position: relative;
     aspect-ratio: 1.586; border: none; border-radius: 14px; box-shadow: 0 3px 8px rgba(36,53,43,0.15);
     display: flex; align-items: flex-end; padding: 12px; cursor: pointer;
     font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px; text-align: left;
+  }
+  .loyalty-card-logo {
+    position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 8px;
+    background: #fff; object-fit: contain; padding: 3px; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   }
   .add-card-btn { margin-top: 18px; }
 
@@ -188,6 +193,13 @@
   }
   .code-box img, .code-box canvas { max-width: 100%; height: auto; }
   .code-box-detail { padding: 28px; min-height: 160px; }
+  .card-detail-logo {
+    width: 64px; height: 64px; border-radius: 14px; object-fit: contain; background: #fff;
+    padding: 6px; align-self: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .logo-preview-row { display: flex; align-items: center; gap: 10px; }
+  .logo-preview-row .btn-secondary { flex: 1; }
+  .logo-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: contain; background: #fff; padding: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -380,8 +392,10 @@ function logViewHTML() {
 }
 
 function cardButtonHTML(card) {
+  const logoHTML = card.logo ? '<img src="' + card.logo + '" alt="" class="loyalty-card-logo" />' : '';
   return (
     '<button class="loyalty-card" style="background:' + card.color + '" data-action="open-card" data-id="' + card.id + '">' +
+      logoHTML +
       '<span style="color:' + textColorFor(card.color) + '">' + esc(card.name) + '</span>' +
     '</button>'
   );
@@ -472,6 +486,11 @@ function addCardSheetHTML() {
         '<button type="button" data-type="qr">QR-code</button>' +
       '</div>' +
       '<div id="card-code-preview" class="code-box">Vul een code in om een voorbeeld te zien</div>' +
+      '<span class="field-label">Logo (optioneel)</span>' +
+      '<div id="card-logo-wrap">' +
+        '<button class="btn-secondary full" id="choose-logo-btn" type="button">' + icon('upload', 18) + ' Kies logo</button>' +
+      '</div>' +
+      '<input id="card-logo-input" type="file" accept="image/*" class="hidden-input" />' +
       '<span class="field-label">Kleur van de knop</span>' +
       '<div class="color-row">' +
         '<input id="card-color-input" type="color" value="#3F6B4F" class="color-input" />' +
@@ -507,8 +526,10 @@ function renderCode(container, code, type, size) {
 
 function cardDetailSheetHTML(sheet) {
   const card = sheet.card;
+  const logoHTML = card.logo ? '<img src="' + card.logo + '" alt="" class="card-detail-logo" />' : '';
   const body =
     '<div class="card-detail">' +
+      logoHTML +
       '<div id="card-detail-code" class="code-box code-box-detail"></div>' +
       '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
     '</div>';
@@ -552,11 +573,14 @@ function triggerSaveMember() {
 
 function wireAddCardSheet() {
   let selectedType = 'barcode';
+  let logoData = null;
 
   const nameInput = document.getElementById('card-name-input');
   const codeInput = document.getElementById('card-code-input');
   const typeToggle = document.getElementById('card-type-toggle');
   const preview = document.getElementById('card-code-preview');
+  const logoWrap = document.getElementById('card-logo-wrap');
+  const logoInput = document.getElementById('card-logo-input');
   const colorInput = document.getElementById('card-color-input');
   const colorPreview = document.getElementById('card-color-preview');
   const saveBtn = document.getElementById('save-card-btn');
@@ -579,6 +603,62 @@ function wireAddCardSheet() {
     updatePreview();
   });
 
+  function renderLogoWrap() {
+    logoWrap.innerHTML = '';
+    if (!logoData) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-secondary full';
+      btn.innerHTML = icon('upload', 18) + ' Kies logo';
+      btn.addEventListener('click', () => logoInput.click());
+      logoWrap.appendChild(btn);
+      return;
+    }
+    const row = document.createElement('div');
+    row.className = 'logo-preview-row';
+    const img = document.createElement('img');
+    img.src = logoData;
+    img.className = 'logo-thumb';
+    row.appendChild(img);
+    const otherBtn = document.createElement('button');
+    otherBtn.type = 'button';
+    otherBtn.className = 'btn-secondary';
+    otherBtn.textContent = 'Andere kiezen';
+    otherBtn.addEventListener('click', () => logoInput.click());
+    row.appendChild(otherBtn);
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'icon-btn muted';
+    removeBtn.innerHTML = icon('x', 16);
+    removeBtn.addEventListener('click', () => { logoData = null; renderLogoWrap(); });
+    row.appendChild(removeBtn);
+    logoWrap.appendChild(row);
+  }
+  renderLogoWrap();
+
+  logoInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 160;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        logoData = canvas.toDataURL('image/png');
+        renderLogoWrap();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
   colorInput.addEventListener('input', () => {
     colorPreview.style.background = colorInput.value;
     colorPreview.style.color = textColorFor(colorInput.value);
@@ -590,7 +670,7 @@ function wireAddCardSheet() {
     if (!name) { nameInput.focus(); return; }
     if (!code) { codeInput.focus(); return; }
     saveBtn.disabled = true;
-    await saveNewCard({ name, color: colorInput.value, code, codeType: selectedType });
+    await saveNewCard({ name, color: colorInput.value, code, codeType: selectedType, logo: logoData });
   });
 }
 
@@ -651,11 +731,13 @@ async function purgeLogItem(id) {
   await deleteDoc(doc(db, 'shoppingLog', id));
 }
 
-async function saveNewCard({ name, color, code, codeType }) {
+async function saveNewCard({ name, color, code, codeType, logo }) {
   const id = uid();
   state.sheet = null;
   renderSheetRoot();
-  await setDoc(doc(db, 'loyaltyCards', id), { name, color, code, codeType });
+  const data = { name, color, code, codeType };
+  if (logo) data.logo = logo;
+  await setDoc(doc(db, 'loyaltyCards', id), data);
 }
 
 async function deleteCard(id) {
@@ -813,4 +895,3 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
-
