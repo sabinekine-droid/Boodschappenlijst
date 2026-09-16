@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="theme-color" content="#3F6B4F" />
+<title>Ons lijstje</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #EFF3EA; }
+  :root {
+    --bg: #EFF3EA;
+    --surface: #FFFFFF;
+    --ink: #24352B;
+    --ink-muted: #7C8B7F;
+    --primary: #3F6B4F;
+    --primary-dark: #2C4D38;
+    --primary-light: #DCE8D6;
+    --accent: #E7A72C;
+    --danger: #B54B3A;
+    --line: #E1E6DB;
+  }
+  .app-shell { color: var(--ink); min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative; }
+  h1, h2, h3 { font-family: 'Fredoka', sans-serif; margin: 0; }
+
+  .loading-wrap {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    min-height: 100vh; color: var(--ink-muted); font-size: 14px; text-align: center; padding: 24px;
+  }
+  .loading-wrap.error { color: var(--danger); }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 14px; }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand h1 { font-size: 22px; font-weight: 600; color: var(--primary-dark); }
+  .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .avatar-btn { background: none; border: none; padding: 0; cursor: pointer; }
+  .avatar {
+    border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center;
+    font-family: 'Fredoka', sans-serif; font-weight: 600; flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  .segmented { display: flex; margin: 0 18px 6px; background: var(--surface); border-radius: 12px; padding: 4px; gap: 4px; }
+  .segmented button {
+    flex: 1; border: none; background: transparent; padding: 9px 0; border-radius: 9px;
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px; color: var(--ink-muted); cursor: pointer;
+  }
+  .segmented button.active { background: var(--primary); color: #fff; }
+
+  .view-pad { padding: 6px 18px 100px; }
+
+  .add-form { background: var(--surface); border-radius: 16px; padding: 10px; margin: 10px 0 16px; box-shadow: 0 2px 10px rgba(36,53,43,0.06); }
+  .add-form-main { display: flex; gap: 8px; }
+  .add-form-extra { display: flex; gap: 8px; margin-top: 8px; }
+  .text-input {
+    flex: 1; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px;
+    font-size: 15px; font-family: 'Inter', sans-serif; color: var(--ink); background: #fff; min-width: 0;
+  }
+  .text-input:focus { outline: none; border-color: var(--primary); }
+  .text-input.small { font-size: 14px; }
+
+  .btn-primary, .btn-secondary, .btn-danger {
+    border: none; border-radius: 10px; padding: 10px 16px;
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14.5px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:disabled { background: #A9BBA8; cursor: not-allowed; }
+  .btn-secondary { background: var(--primary-light); color: var(--primary-dark); }
+  .btn-danger { background: #FBEAE6; color: var(--danger); }
+  .btn-primary.full, .btn-secondary.full, .btn-danger.full { width: 100%; }
+  .btn-primary.square { width: 42px; height: 42px; padding: 0; flex-shrink: 0; border-radius: 10px; }
+
+  .item-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .item-row {
+    background: var(--surface); border-radius: 12px; border-left: 5px solid var(--line);
+    padding: 10px 10px 10px 12px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 1px 4px rgba(36,53,43,0.05);
+  }
+  .item-text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .item-name { font-size: 15px; font-weight: 500; }
+  .item-name.strike { text-decoration: line-through; color: var(--ink-muted); }
+  .item-sub { font-size: 12.5px; color: var(--ink-muted); margin-top: 1px; }
+
+  .check-circle {
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--primary);
+    background: #fff; color: var(--primary); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; padding: 0;
+  }
+  .check-circle:hover { background: var(--primary); color: #fff; }
+
+  .icon-btn {
+    background: none; border: none; cursor: pointer; color: var(--primary);
+    display: flex; align-items: center; justify-content: center; padding: 4px; flex-shrink: 0;
+  }
+  .icon-btn.muted { color: var(--ink-muted); }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--ink-muted); }
+  .empty-icon {
+    width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary-dark);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+  }
+  .empty-state h3 { font-size: 16px; color: var(--ink); margin-bottom: 4px; }
+  .empty-state p { font-size: 13.5px; margin: 0; max-width: 260px; margin-inline: auto; }
+
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  .loyalty-card {
+    aspect-ratio: 1.586; border: none; border-radius: 14px; box-shadow: 0 3px 8px rgba(36,53,43,0.15);
+    display: flex; align-items: flex-end; padding: 12px; cursor: pointer;
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px; text-align: left;
+  }
+  .add-card-btn { margin-top: 18px; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px; background: var(--surface); border-top: 1px solid var(--line);
+    display: flex; padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  .nav-btn {
+    flex: 1; border: none; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--ink-muted); padding: 6px 0; cursor: pointer;
+  }
+  .nav-btn.active { color: var(--primary); }
+
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(36,53,43,0.35); display: flex; align-items: flex-end; z-index: 40; }
+  .sheet {
+    background: var(--bg); width: 100%; max-width: 480px; margin: 0 auto; border-radius: 20px 20px 0 0;
+    padding: 10px 18px 26px; max-height: 86vh; overflow-y: auto;
+  }
+  .sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 10px; }
+  .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .sheet-header h2 { font-size: 18px; color: var(--primary-dark); }
+
+  .member-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .member-row {
+    display: flex; align-items: center; gap: 10px; background: var(--surface); border: none; border-radius: 12px;
+    padding: 10px 12px; font-size: 15px; font-weight: 500; cursor: pointer; text-align: left; width: 100%;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+  .field-label { font-size: 12.5px; font-weight: 600; color: var(--ink-muted); margin-top: 4px; }
+  .swatch-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .swatch { width: 100%; aspect-ratio: 1; border-radius: 50%; border: none; cursor: pointer; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5); padding: 0; }
+  .swatch-active { box-shadow: 0 0 0 3px var(--ink); }
+  .row-gap { display: flex; gap: 8px; margin-top: 6px; }
+  .row-gap .btn-primary { flex: 1; }
+
+  .pick-wrap { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+  .pick-canvas { width: 100%; border-radius: 12px; cursor: crosshair; display: block; }
+  .pick-canvas.picking { box-shadow: 0 0 0 2px var(--accent); }
+  .hint { font-size: 12.5px; color: var(--ink-muted); display: flex; align-items: center; gap: 5px; margin: 0; }
+  .hidden-input { display: none; }
+  .color-row { display: flex; align-items: center; gap: 10px; }
+  .color-input { width: 44px; height: 44px; border: none; border-radius: 10px; padding: 0; background: none; cursor: pointer; }
+  .color-preview {
+    flex: 1; height: 44px; border-radius: 10px; display: flex; align-items: center; padding: 0 14px;
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 14px;
+  }
+
+  .card-detail { display: flex; flex-direction: column; gap: 14px; }
+  .card-detail-img { width: 100%; border-radius: 14px; display: block; }
+  .card-detail-placeholder {
+    width: 100%; aspect-ratio: 1.586; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 18px;
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div id="loading-view" class="loading-wrap">Verbinden met de gedeelde lijst…</div>
+  <div id="app-content" style="display:none;">
+    <div id="topbar-root"></div>
+    <div id="segmented-root"></div>
+    <div id="view-root"></div>
+    <div id="nav-root"></div>
+  </div>
+  <div id="sheet-root"></div>
+</div>
+
+<script type="module">
+/* =====================================================================
+   FIREBASE SETUP — vul dit in met je eigen project
+   ===================================================================== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, doc, setDoc, deleteDoc, getDoc, onSnapshot,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// 1) Plak hier de firebaseConfig die je uit de Firebase console kopieert
+//    (Project instellingen > Jouw apps > Web-app).
+const firebaseConfig = {
+  apiKey: "AIzaSyA345i6Q0yVOvW3FymP6AKFGkgFEyA5Uq0",
+  authDomain: "boodschappenlijstje-24b03.firebaseapp.com",
+  projectId: "boodschappenlijstje-24b03",
+  storageBucket: "boodschappenlijstje-24b03.firebasestorage.app",
+  messagingSenderId: "444246536340",
+  appId: "1:444246536340:web:7c811767c2182e59c10481",
+};
+
+let db = null;
+let firebaseReady = false;
+let firebaseError = null;
+
+try {
+  const fbApp = initializeApp(firebaseConfig);
+  const auth = getAuth(fbApp);
+  db = getFirestore(fbApp);
+  await signInAnonymously(auth);
+  firebaseReady = true;
+} catch (e) {
+  console.error("Firebase kon niet starten:", e);
+  firebaseError = e;
+}
+
+/* =====================================================================
+   Helpers
+   ===================================================================== */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function initials(name) { return (name || '?').trim().slice(0, 1).toUpperCase(); }
+function itemMeta(item) {
+  const parts = [];
+  if (item.amount) parts.push(item.amount + 'x');
+  if (item.weight) parts.push(item.weight);
+  return parts.join(' · ');
+}
+function textColorFor(bgHex) {
+  const c = (bgHex || '#3F6B4F').replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luma > 0.6 ? '#24352B' : '#FFFFFF';
+}
+function esc(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+const MEMBER_COLORS = ['#E4572E','#3F88C5','#DB6CB2','#4C9F70','#F2B134','#7C5CBF','#2E86AB','#D64550','#1B998B','#F45B69'];
+
+function icon(name, size) {
+  size = size || 20;
+  const paths = {
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    x: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>',
+    check: '<polyline points="5 13 10 18 19 7"/>',
+    trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>',
+    rotate: '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/>',
+    cart: '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.8h8.2a2 2 0 0 0 2-1.6L21 8H6"/>',
+    card: '<rect x="2" y="5" width="20" height="14" rx="2.5"/><line x1="2" y1="10" x2="22" y2="10"/>',
+    pipette: '<path d="M15 5l4 4"/><path d="M4 20l1-4 9-9 3 3-9 9-4 1z"/>',
+    upload: '<path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 20h16"/>',
+    arrowleft: '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
+  };
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (paths[name] || '') + '</svg>';
+}
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const state = {
+  members: [], items: [], log: [], cards: [],
+  currentMemberId: localStorage.getItem('current-member-id') || null,
+  tab: 'list', listSub: 'active',
+  sheet: null,
+};
+
+function currentMember() { return state.members.find((m) => m.id === state.currentMemberId) || null; }
+function memberById(id) { return state.members.find((m) => m.id === id); }
+
+function avatarHTML(m, size) {
+  size = size || 36;
+  if (!m) return '';
+  return '<div class="avatar" style="width:' + size + 'px;height:' + size + 'px;background:' + m.color + ';font-size:' + Math.round(size * 0.42) + 'px;">' + esc(initials(m.name)) + '</div>';
+}
+function emptyStateHTML(iconSvg, title, text) {
+  return '<div class="empty-state"><div class="empty-icon">' + iconSvg + '</div><h3>' + esc(title) + '</h3><p>' + esc(text) + '</p></div>';
+}
+
+/* =====================================================================
+   Main views
+   ===================================================================== */
+function renderTopbar() {
+  const m = currentMember();
+  document.getElementById('topbar-root').innerHTML =
+    '<div class="topbar">' +
+      '<div class="brand"><span class="brand-dot"></span><h1>Ons lijstje</h1></div>' +
+      (m ? '<button class="avatar-btn" data-action="open-switcher">' + avatarHTML(m, 36) + '</button>' : '') +
+    '</div>';
+}
+
+function renderSegmented() {
+  const root = document.getElementById('segmented-root');
+  if (state.tab !== 'list') { root.innerHTML = ''; return; }
+  root.innerHTML =
+    '<div class="segmented">' +
+      '<button class="' + (state.listSub === 'active' ? 'active' : '') + '" data-action="set-listsub" data-value="active">Lijst' + (state.items.length ? ' (' + state.items.length + ')' : '') + '</button>' +
+      '<button class="' + (state.listSub === 'log' ? 'active' : '') + '" data-action="set-listsub" data-value="log">Logboek' + (state.log.length ? ' (' + state.log.length + ')' : '') + '</button>' +
+    '</div>';
+}
+
+function renderView() {
+  const root = document.getElementById('view-root');
+  if (state.tab === 'list') {
+    root.innerHTML = state.listSub === 'active' ? listViewHTML() : logViewHTML();
+  } else {
+    root.innerHTML = cardsViewHTML();
+  }
+}
+
+function itemRowHTML(item) {
+  const m = memberById(item.memberId);
+  const meta = itemMeta(item);
+  return (
+    '<li class="item-row" style="border-left-color:' + (m ? m.color : 'var(--line)') + '">' +
+      '<button class="check-circle" data-action="buy-item" data-id="' + item.id + '">' + icon('check', 16) + '</button>' +
+      '<div class="item-text"><span class="item-name">' + esc(item.name) + '</span>' +
+        (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
+      '</div>' +
+      (m ? avatarHTML(m, 26) : '') +
+      '<button class="icon-btn muted" data-action="delete-item" data-id="' + item.id + '">' + icon('x', 16) + '</button>' +
+    '</li>'
+  );
+}
+
+function listViewHTML() {
+  const itemsHTML = state.items.length === 0
+    ? emptyStateHTML(icon('cart', 28), 'Niets op de lijst', 'Typ hieronder iets dat je nodig hebt en tik op de plus.')
+    : '<ul class="item-list">' + state.items.map(itemRowHTML).join('') + '</ul>';
+  return (
+    '<div class="view-pad">' +
+      '<form class="add-form" data-action="submit-add-item">' +
+        '<div class="add-form-main">' +
+          '<input class="text-input" name="name" placeholder="Wat heb je nodig?" autocomplete="off" />' +
+          '<button class="btn-primary square" type="submit">' + icon('plus', 20) + '</button>' +
+        '</div>' +
+        '<div class="add-form-extra">' +
+          '<input class="text-input small" name="amount" placeholder="Aantal (optioneel)" inputmode="numeric" autocomplete="off" />' +
+          '<input class="text-input small" name="weight" placeholder="Gewicht (bv. 500g)" autocomplete="off" />' +
+        '</div>' +
+      '</form>' +
+      itemsHTML +
+    '</div>'
+  );
+}
+
+function logRowHTML(item) {
+  const buyer = memberById(item.boughtBy);
+  const meta = [itemMeta(item), buyer ? ('door ' + buyer.name) : null].filter(Boolean).join(' · ');
+  return (
+    '<li class="item-row" style="border-left-color:' + (buyer ? buyer.color : 'var(--line)') + '">' +
+      '<div class="item-text"><span class="item-name strike">' + esc(item.name) + '</span>' +
+        (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
+      '</div>' +
+      '<button class="icon-btn" data-action="restore-log" data-id="' + item.id + '" title="Terugzetten">' + icon('rotate', 17) + '</button>' +
+      '<button class="icon-btn muted" data-action="purge-log" data-id="' + item.id + '" title="Definitief verwijderen">' + icon('trash', 16) + '</button>' +
+    '</li>'
+  );
+}
+
+function logViewHTML() {
+  if (state.log.length === 0) {
+    return '<div class="view-pad">' + emptyStateHTML(icon('rotate', 28), 'Logboek is leeg', 'Wat je aanvinkt als gekocht, verschijnt hier terug.') + '</div>';
+  }
+  return '<div class="view-pad"><ul class="item-list">' + state.log.map(logRowHTML).join('') + '</ul></div>';
+}
+
+function cardButtonHTML(card) {
+  return (
+    '<button class="loyalty-card" style="background:' + card.color + '" data-action="open-card" data-id="' + card.id + '">' +
+      '<span style="color:' + textColorFor(card.color) + '">' + esc(card.name) + '</span>' +
+    '</button>'
+  );
+}
+
+function cardsViewHTML() {
+  const grid = state.cards.length === 0
+    ? emptyStateHTML(icon('card', 28), 'Nog geen klantenkaarten', 'Voeg bijvoorbeeld Delhaize, Aldi, Kruidvat of Okay toe met de knop hieronder.')
+    : '<div class="card-grid">' + state.cards.map(cardButtonHTML).join('') + '</div>';
+  return (
+    '<div class="view-pad">' + grid +
+      '<button class="btn-primary full add-card-btn" data-action="open-add-card">' + icon('plus', 18) + ' Nieuwe klantenkaart</button>' +
+    '</div>'
+  );
+}
+
+function renderNav() {
+  document.getElementById('nav-root').innerHTML =
+    '<nav class="bottom-nav">' +
+      '<button class="nav-btn ' + (state.tab === 'list' ? 'active' : '') + '" data-action="set-tab" data-value="list">' + icon('cart', 20) + 'Boodschappen</button>' +
+      '<button class="nav-btn ' + (state.tab === 'cards' ? 'active' : '') + '" data-action="set-tab" data-value="cards">' + icon('card', 20) + 'Klantenkaarten</button>' +
+    '</nav>';
+}
+
+function renderApp() {
+  renderTopbar();
+  renderSegmented();
+  renderView();
+  renderNav();
+}
+
+/* =====================================================================
+   Sheets
+   ===================================================================== */
+function sheetWrap(titleText, bodyHTML, closable) {
+  return (
+    '<div class="sheet-backdrop">' +
+      '<div class="sheet">' +
+        '<div class="sheet-handle"></div>' +
+        (titleText ? (
+          '<div class="sheet-header"><h2>' + esc(titleText) + '</h2>' +
+          (closable ? '<button class="icon-btn" data-action="close-sheet">' + icon('x', 20) + '</button>' : '') +
+          '</div>'
+        ) : '') +
+        '<div class="sheet-body">' + bodyHTML + '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function memberSheetHTML(sheet) {
+  if (!sheet.creating) {
+    const rows = state.members.map((m) =>
+      '<button class="member-row" data-action="pick-member" data-id="' + m.id + '">' + avatarHTML(m, 36) + '<span>' + esc(m.name) + '</span></button>'
+    ).join('');
+    const body =
+      '<div class="member-list">' + rows + '</div>' +
+      '<button class="btn-secondary full" data-action="start-create-member">' + icon('plus', 18) + ' Nieuw gezinslid</button>';
+    return sheetWrap('Wie ben jij?', body, sheet.closable);
+  }
+  const usedColors = new Set(state.members.map((m) => m.color));
+  const suggestion = MEMBER_COLORS.find((c) => !usedColors.has(c)) || MEMBER_COLORS[0];
+  const chosen = sheet.color || suggestion;
+  const swatches = MEMBER_COLORS.map((c) =>
+    '<button class="swatch ' + (c === chosen ? 'swatch-active' : '') + '" style="background:' + c + '" data-action="choose-swatch" data-value="' + c + '"></button>'
+  ).join('');
+  const backBtn = state.members.length > 0
+    ? '<button class="btn-secondary" data-action="back-to-member-list">' + icon('arrowleft', 18) + ' Terug</button>'
+    : '';
+  const body =
+    '<div class="stack">' +
+      '<label class="field-label">Naam</label>' +
+      '<input id="member-name-input" class="text-input" placeholder="Bijv. Mama, Papa, Finn..." value="' + esc(sheet.name || '') + '" />' +
+      '<span class="field-label">Kleur</span>' +
+      '<div class="swatch-grid">' + swatches + '</div>' +
+      '<div class="row-gap">' + backBtn + '<button class="btn-primary full" data-action="save-member">Opslaan</button></div>' +
+    '</div>';
+  return sheetWrap('Nieuw gezinslid', body, sheet.closable);
+}
+
+function addCardSheetHTML() {
+  const body =
+    '<div class="stack">' +
+      '<label class="field-label">Naam winkel</label>' +
+      '<input id="card-name-input" class="text-input" placeholder="Bijv. Delhaize" autocomplete="off" />' +
+      '<span class="field-label">Foto van de kaart</span>' +
+      '<div id="card-photo-wrap">' +
+        '<button class="btn-secondary full" id="choose-photo-btn" type="button">' + icon('upload', 18) + ' Kies foto</button>' +
+      '</div>' +
+      '<input id="card-file-input" type="file" accept="image/*" class="hidden-input" />' +
+      '<span class="field-label">Kleur van de knop</span>' +
+      '<div class="color-row">' +
+        '<input id="card-color-input" type="color" value="#3F6B4F" class="color-input" />' +
+        '<div id="card-color-preview" class="color-preview" style="background:#3F6B4F;color:#FFFFFF">Voorbeeld</div>' +
+      '</div>' +
+      '<button class="btn-primary full" id="save-card-btn" type="button">Kaart opslaan</button>' +
+    '</div>';
+  return sheetWrap('Nieuwe klantenkaart', body, true);
+}
+
+function cardDetailSheetHTML(sheet) {
+  const card = sheet.card;
+  const body =
+    '<div class="card-detail">' +
+      (sheet.image
+        ? '<img src="' + sheet.image + '" alt="' + esc(card.name) + '" class="card-detail-img"/>'
+        : (sheet.imageLoading
+            ? '<div class="card-detail-placeholder" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">…</div>'
+            : '<div class="card-detail-placeholder" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">' + esc(card.name) + '</div>')) +
+      '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
+    '</div>';
+  return sheetWrap(card.name, body, true);
+}
+
+function renderSheetRoot() {
+  const root = document.getElementById('sheet-root');
+  if (!state.sheet) { root.innerHTML = ''; return; }
+
+  if (state.sheet.type === 'member') {
+    root.innerHTML = memberSheetHTML(state.sheet);
+    if (state.sheet.creating) {
+      const input = document.getElementById('member-name-input');
+      if (input) {
+        input.focus();
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); triggerSaveMember(); }
+        });
+      }
+    }
+  } else if (state.sheet.type === 'addCard') {
+    root.innerHTML = addCardSheetHTML();
+    wireAddCardSheet();
+  } else if (state.sheet.type === 'cardDetail') {
+    root.innerHTML = cardDetailSheetHTML(state.sheet);
+  }
+}
+
+function triggerSaveMember() {
+  const nameInput = document.getElementById('member-name-input');
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.focus(); return; }
+  const usedColors = new Set(state.members.map((m) => m.color));
+  const suggestion = MEMBER_COLORS.find((c) => !usedColors.has(c)) || MEMBER_COLORS[0];
+  const color = (state.sheet && state.sheet.color) || suggestion;
+  createMember(name, color);
+}
+
+function wireAddCardSheet() {
+  let addCardImageData = null;
+  let addCardColor = '#3F6B4F';
+
+  const nameInput = document.getElementById('card-name-input');
+  const fileInput = document.getElementById('card-file-input');
+  const chooseBtn = document.getElementById('choose-photo-btn');
+  const colorInput = document.getElementById('card-color-input');
+  const colorPreview = document.getElementById('card-color-preview');
+  const saveBtn = document.getElementById('save-card-btn');
+  const photoWrap = document.getElementById('card-photo-wrap');
+
+  nameInput.focus();
+  nameInput.addEventListener('input', () => { colorPreview.textContent = nameInput.value.trim() || 'Voorbeeld'; });
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 480;
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.className = 'pick-canvas picking';
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        addCardImageData = canvas.toDataURL('image/jpeg', 0.85);
+
+        photoWrap.innerHTML = '';
+        photoWrap.appendChild(canvas);
+        const hint = document.createElement('p');
+        hint.className = 'hint';
+        hint.innerHTML = icon('pipette', 14) + ' Tik op de foto om de kleur van de knop te kiezen';
+        photoWrap.appendChild(hint);
+        const otherBtn = document.createElement('button');
+        otherBtn.type = 'button';
+        otherBtn.className = 'btn-secondary full';
+        otherBtn.textContent = 'Andere foto kiezen';
+        otherBtn.addEventListener('click', () => fileInput.click());
+        photoWrap.appendChild(otherBtn);
+
+        canvas.addEventListener('click', (ev) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const x = Math.floor((ev.clientX - rect.left) * scaleX);
+          const y = Math.floor((ev.clientY - rect.top) * scaleY);
+          const d = ctx.getImageData(x, y, 1, 1).data;
+          const hex = '#' + [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+          addCardColor = hex;
+          colorInput.value = hex;
+          colorPreview.style.background = hex;
+          colorPreview.style.color = textColorFor(hex);
+        });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  colorInput.addEventListener('input', () => {
+    addCardColor = colorInput.value;
+    colorPreview.style.background = addCardColor;
+    colorPreview.style.color = textColorFor(addCardColor);
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    saveBtn.disabled = true;
+    await saveNewCard({ name, color: addCardColor, image: addCardImageData });
+  });
+}
+
+document.getElementById('sheet-root').addEventListener('click', (e) => {
+  if (e.target.classList.contains('sheet-backdrop')) {
+    const s = state.sheet;
+    if (s && s.closable) { state.sheet = null; renderSheetRoot(); }
+  }
+});
+
+/* =====================================================================
+   Data actions — these write to Firestore; the onSnapshot listeners
+   further down pick the change up (on every phone, incl. this one)
+   and re-render automatically.
+   ===================================================================== */
+async function pickMember(id) {
+  state.currentMemberId = id;
+  localStorage.setItem('current-member-id', id);
+  state.sheet = null;
+  renderSheetRoot();
+  renderApp();
+}
+
+async function createMember(name, color) {
+  const id = uid();
+  await setDoc(doc(db, 'familyMembers', id), { name, color });
+  await pickMember(id);
+}
+
+async function addItem({ name, amount, weight }) {
+  const cm = currentMember();
+  if (!cm) return;
+  const id = uid();
+  await setDoc(doc(db, 'shoppingItems', id), { name, amount, weight, memberId: cm.id, createdAt: Date.now() });
+}
+
+async function deleteItem(id) {
+  await deleteDoc(doc(db, 'shoppingItems', id));
+}
+
+async function buyItem(id) {
+  const item = state.items.find((i) => i.id === id);
+  if (!item) return;
+  const cm = currentMember();
+  await deleteDoc(doc(db, 'shoppingItems', id));
+  await setDoc(doc(db, 'shoppingLog', id), {
+    name: item.name, amount: item.amount, weight: item.weight, memberId: item.memberId,
+    createdAt: item.createdAt, boughtBy: cm ? cm.id : null, boughtAt: Date.now(),
+  });
+}
+
+async function restoreLogItem(id) {
+  const logItem = state.log.find((i) => i.id === id);
+  if (!logItem) return;
+  await deleteDoc(doc(db, 'shoppingLog', id));
+  await setDoc(doc(db, 'shoppingItems', id), {
+    name: logItem.name, amount: logItem.amount, weight: logItem.weight,
+    memberId: logItem.memberId, createdAt: logItem.createdAt,
+  });
+}
+
+async function purgeLogItem(id) {
+  await deleteDoc(doc(db, 'shoppingLog', id));
+}
+
+async function saveNewCard({ name, color, image }) {
+  const id = uid();
+  state.sheet = null;
+  renderSheetRoot();
+  await setDoc(doc(db, 'loyaltyCards', id), { name, color });
+  if (image) { await setDoc(doc(db, 'cardImages', id), { image }); }
+}
+
+async function deleteCard(id) {
+  state.sheet = null;
+  renderSheetRoot();
+  await deleteDoc(doc(db, 'loyaltyCards', id));
+  try { await deleteDoc(doc(db, 'cardImages', id)); } catch (e) { /* ignore */ }
+}
+
+/* =====================================================================
+   Event delegation
+   ===================================================================== */
+document.body.addEventListener('submit', async (e) => {
+  if (e.target.matches && e.target.matches('[data-action="submit-add-item"]')) {
+    e.preventDefault();
+    const form = e.target;
+    const name = form.elements['name'].value.trim();
+    if (!name) return;
+    const amount = form.elements['amount'].value.trim();
+    const weight = form.elements['weight'].value.trim();
+    form.reset();
+    form.elements['name'].focus();
+    await addItem({ name, amount, weight });
+  }
+});
+
+document.body.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  const id = el.dataset.id;
+  const value = el.dataset.value;
+
+  switch (action) {
+    case 'open-switcher':
+      state.sheet = { type: 'member', creating: false, closable: true };
+      renderSheetRoot();
+      break;
+    case 'close-sheet':
+      if (state.sheet && state.sheet.closable) { state.sheet = null; renderSheetRoot(); }
+      break;
+    case 'pick-member':
+      await pickMember(id);
+      break;
+    case 'start-create-member':
+      state.sheet = { type: 'member', creating: true, closable: state.sheet.closable, name: '', color: null };
+      renderSheetRoot();
+      break;
+    case 'back-to-member-list':
+      state.sheet = { type: 'member', creating: false, closable: state.sheet.closable };
+      renderSheetRoot();
+      break;
+    case 'choose-swatch': {
+      const nameInput = document.getElementById('member-name-input');
+      state.sheet.name = nameInput ? nameInput.value : (state.sheet.name || '');
+      state.sheet.color = value;
+      renderSheetRoot();
+      break;
+    }
+    case 'save-member':
+      triggerSaveMember();
+      break;
+    case 'set-tab':
+      state.tab = value;
+      renderApp();
+      break;
+    case 'set-listsub':
+      state.listSub = value;
+      renderSegmented();
+      renderView();
+      break;
+    case 'buy-item':
+      await buyItem(id);
+      break;
+    case 'delete-item':
+      await deleteItem(id);
+      break;
+    case 'restore-log':
+      await restoreLogItem(id);
+      break;
+    case 'purge-log':
+      await purgeLogItem(id);
+      break;
+    case 'open-add-card':
+      state.sheet = { type: 'addCard', closable: true };
+      renderSheetRoot();
+      break;
+    case 'open-card': {
+      const card = state.cards.find((c) => c.id === id);
+      if (!card) return;
+      state.sheet = { type: 'cardDetail', card, image: null, imageLoading: true, closable: true };
+      renderSheetRoot();
+      let img = null;
+      try {
+        const snap = await getDoc(doc(db, 'cardImages', id));
+        img = snap.exists() ? snap.data().image : null;
+      } catch (err) { img = null; }
+      if (state.sheet && state.sheet.type === 'cardDetail' && state.sheet.card.id === id) {
+        state.sheet.image = img;
+        state.sheet.imageLoading = false;
+        renderSheetRoot();
+      }
+      break;
+    }
+    case 'delete-card':
+      await deleteCard(id);
+      break;
+  }
+});
+
+/* =====================================================================
+   Firestore realtime listeners — this is what makes both phones
+   see the same list live, without refreshing.
+   ===================================================================== */
+const ready = { members: false, items: false, log: false, cards: false };
+function checkReady() {
+  if (Object.values(ready).every(Boolean)) {
+    document.getElementById('loading-view').style.display = 'none';
+    document.getElementById('app-content').style.display = 'block';
+    renderApp();
+    if (!currentMember()) {
+      state.sheet = { type: 'member', creating: state.members.length === 0, closable: false };
+      renderSheetRoot();
+    }
+  }
+}
+
+function startListeners() {
+  onSnapshot(collection(db, 'familyMembers'), (snap) => {
+    state.members = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    ready.members = true;
+    checkReady();
+    renderTopbar();
+    if (state.sheet && state.sheet.type === 'member' && !state.sheet.creating) renderSheetRoot();
+  }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'shoppingItems'), (snap) => {
+    state.items = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
+    ready.items = true;
+    checkReady();
+    renderSegmented();
+    if (state.tab === 'list' && state.listSub === 'active') renderView();
+  }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'shoppingLog'), (snap) => {
+    state.log = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.boughtAt - a.boughtAt);
+    ready.log = true;
+    checkReady();
+    renderSegmented();
+    if (state.tab === 'list' && state.listSub === 'log') renderView();
+  }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'loyaltyCards'), (snap) => {
+    state.cards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    ready.cards = true;
+    checkReady();
+    if (state.tab === 'cards') renderView();
+  }, (err) => showFatalError(err));
+}
+
+function showFatalError(err) {
+  console.error(err);
+  const el = document.getElementById('loading-view');
+  el.className = 'loading-wrap error';
+  el.textContent = 'Kan niet verbinden met de gedeelde lijst. Controleer je internetverbinding en of firebaseConfig correct is ingevuld.';
+}
+
+if (firebaseReady) {
+  startListeners();
+} else {
+  showFatalError(firebaseError);
+}
+</script>
+</body>
+</html>
