@@ -10,6 +10,8 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
@@ -167,13 +169,25 @@
   }
 
   .card-detail { display: flex; flex-direction: column; gap: 14px; }
-  .code-render-wrap { display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 14px; padding: 18px 10px; min-height: 120px; }
-  .qr-holder img { display: block; }
   .card-detail-img { width: 100%; border-radius: 14px; display: block; }
   .card-detail-placeholder {
     width: 100%; aspect-ratio: 1.586; border-radius: 14px; display: flex; align-items: center; justify-content: center;
     font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 18px;
   }
+
+  .code-type-toggle { display: flex; background: var(--surface); border-radius: 12px; padding: 4px; gap: 4px; }
+  .code-type-toggle button {
+    flex: 1; border: none; background: transparent; padding: 9px 0; border-radius: 9px;
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13.5px; color: var(--ink-muted); cursor: pointer;
+  }
+  .code-type-toggle button.active { background: var(--primary); color: #fff; }
+  .code-box {
+    background: #fff; border-radius: 14px; padding: 18px;
+    display: flex; align-items: center; justify-content: center; min-height: 90px;
+    color: var(--ink-muted); font-size: 13px; text-align: center;
+  }
+  .code-box img, .code-box canvas { max-width: 100%; height: auto; }
+  .code-box-detail { padding: 28px; min-height: 160px; }
 </style>
 </head>
 <body>
@@ -188,13 +202,11 @@
   <div id="sheet-root"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, setDoc, deleteDoc, getDoc, onSnapshot,
+  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -452,14 +464,14 @@ function addCardSheetHTML() {
     '<div class="stack">' +
       '<label class="field-label">Naam winkel</label>' +
       '<input id="card-name-input" class="text-input" placeholder="Bijv. Delhaize" autocomplete="off" />' +
-      '<span class="field-label">Soort code</span>' +
-      '<div class="segmented" style="margin:0;">' +
-        '<button type="button" class="active" id="codetype-barcode-btn" data-codetype="barcode">Streepjescode</button>' +
-        '<button type="button" id="codetype-qr-btn" data-codetype="qr">QR-code</button>' +
+      '<label class="field-label">Kaartcode / nummer</label>' +
+      '<input id="card-code-input" class="text-input" placeholder="Bijv. 5412345678901" autocomplete="off" />' +
+      '<span class="field-label">Type code</span>' +
+      '<div class="code-type-toggle" id="card-type-toggle">' +
+        '<button type="button" class="active" data-type="barcode">Streepjescode</button>' +
+        '<button type="button" data-type="qr">QR-code</button>' +
       '</div>' +
-      '<label class="field-label">Nummer / code</label>' +
-      '<input id="card-code-input" class="text-input" placeholder="Bijv. 2100012345678" autocomplete="off" inputmode="text" />' +
-      '<p class="hint">Dit nummer staat onder de streepjescode op je pas, of je vindt 'm in de Klarna-app bij de kaartdetails.</p>' +
+      '<div id="card-code-preview" class="code-box">Vul een code in om een voorbeeld te zien</div>' +
       '<span class="field-label">Kleur van de knop</span>' +
       '<div class="color-row">' +
         '<input id="card-color-input" type="color" value="#3F6B4F" class="color-input" />' +
@@ -470,14 +482,34 @@ function addCardSheetHTML() {
   return sheetWrap('Nieuwe klantenkaart', body, true);
 }
 
+function renderCode(container, code, type, size) {
+  container.innerHTML = '';
+  if (!code) {
+    container.textContent = 'Vul een code in om een voorbeeld te zien';
+    return;
+  }
+  if (type === 'qr') {
+    try {
+      new QRCode(container, { text: code, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+    } catch (e) {
+      container.textContent = 'Kan geen QR-code maken van deze tekst.';
+    }
+  } else {
+    const canvas = document.createElement('canvas');
+    container.appendChild(canvas);
+    try {
+      JsBarcode(canvas, code, { format: 'CODE128', displayValue: true, width: 2, height: Math.round(size * 0.5), margin: 8 });
+    } catch (e) {
+      container.textContent = 'Deze code kan niet als streepjescode getoond worden.';
+    }
+  }
+}
+
 function cardDetailSheetHTML(sheet) {
   const card = sheet.card;
-  const hasCode = !!card.codeValue;
   const body =
     '<div class="card-detail">' +
-      (hasCode
-        ? '<div class="code-render-wrap" id="code-render-wrap"></div>'
-        : '<div class="card-detail-placeholder" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">' + esc(card.name) + '</div>') +
+      '<div id="card-detail-code" class="code-box code-box-detail"></div>' +
       '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
     '</div>';
   return sheetWrap(card.name, body, true);
@@ -503,28 +535,8 @@ function renderSheetRoot() {
     wireAddCardSheet();
   } else if (state.sheet.type === 'cardDetail') {
     root.innerHTML = cardDetailSheetHTML(state.sheet);
-    renderCodeForCard(state.sheet.card);
-  }
-}
-
-function renderCodeForCard(card) {
-  const wrap = document.getElementById('code-render-wrap');
-  if (!wrap || !card.codeValue) return;
-  wrap.innerHTML = '';
-  if (card.codeType === 'qr') {
-    const holder = document.createElement('div');
-    holder.className = 'qr-holder';
-    wrap.appendChild(holder);
-    try {
-      new QRCode(holder, { text: card.codeValue, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
-    } catch (e) { wrap.innerHTML = '<p class="hint">Kon QR-code niet tonen.</p>'; }
-  } else {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.id = 'barcode-svg';
-    wrap.appendChild(svg);
-    try {
-      JsBarcode(svg, card.codeValue, { format: 'CODE128', width: 2.4, height: 90, displayValue: true, margin: 10 });
-    } catch (e) { wrap.innerHTML = '<p class="hint">Kon streepjescode niet tonen.</p>'; }
+    const container = document.getElementById('card-detail-code');
+    if (container) renderCode(container, state.sheet.card.code, state.sheet.card.codeType, 220);
   }
 }
 
@@ -539,13 +551,12 @@ function triggerSaveMember() {
 }
 
 function wireAddCardSheet() {
-  let addCardColor = '#3F6B4F';
-  let addCardCodeType = 'barcode';
+  let selectedType = 'barcode';
 
   const nameInput = document.getElementById('card-name-input');
   const codeInput = document.getElementById('card-code-input');
-  const barcodeBtn = document.getElementById('codetype-barcode-btn');
-  const qrBtn = document.getElementById('codetype-qr-btn');
+  const typeToggle = document.getElementById('card-type-toggle');
+  const preview = document.getElementById('card-code-preview');
   const colorInput = document.getElementById('card-color-input');
   const colorPreview = document.getElementById('card-color-preview');
   const saveBtn = document.getElementById('save-card-btn');
@@ -553,31 +564,33 @@ function wireAddCardSheet() {
   nameInput.focus();
   nameInput.addEventListener('input', () => { colorPreview.textContent = nameInput.value.trim() || 'Voorbeeld'; });
   nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); codeInput.focus(); } });
+
+  function updatePreview() {
+    renderCode(preview, codeInput.value.trim(), selectedType, 180);
+  }
+  codeInput.addEventListener('input', updatePreview);
   codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
 
-  barcodeBtn.addEventListener('click', () => {
-    addCardCodeType = 'barcode';
-    barcodeBtn.classList.add('active');
-    qrBtn.classList.remove('active');
-  });
-  qrBtn.addEventListener('click', () => {
-    addCardCodeType = 'qr';
-    qrBtn.classList.add('active');
-    barcodeBtn.classList.remove('active');
+  typeToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-type]');
+    if (!btn) return;
+    selectedType = btn.dataset.type;
+    typeToggle.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
+    updatePreview();
   });
 
   colorInput.addEventListener('input', () => {
-    addCardColor = colorInput.value;
-    colorPreview.style.background = addCardColor;
-    colorPreview.style.color = textColorFor(addCardColor);
+    colorPreview.style.background = colorInput.value;
+    colorPreview.style.color = textColorFor(colorInput.value);
   });
 
   saveBtn.addEventListener('click', async () => {
     const name = nameInput.value.trim();
+    const code = codeInput.value.trim();
     if (!name) { nameInput.focus(); return; }
-    const codeValue = codeInput.value.trim();
+    if (!code) { codeInput.focus(); return; }
     saveBtn.disabled = true;
-    await saveNewCard({ name, color: addCardColor, codeType: addCardCodeType, codeValue });
+    await saveNewCard({ name, color: colorInput.value, code, codeType: selectedType });
   });
 }
 
@@ -638,11 +651,11 @@ async function purgeLogItem(id) {
   await deleteDoc(doc(db, 'shoppingLog', id));
 }
 
-async function saveNewCard({ name, color, codeType, codeValue }) {
+async function saveNewCard({ name, color, code, codeType }) {
   const id = uid();
   state.sheet = null;
   renderSheetRoot();
-  await setDoc(doc(db, 'loyaltyCards', id), { name, color, codeType: codeType || 'barcode', codeValue: codeValue || '' });
+  await setDoc(doc(db, 'loyaltyCards', id), { name, color, code, codeType });
 }
 
 async function deleteCard(id) {
