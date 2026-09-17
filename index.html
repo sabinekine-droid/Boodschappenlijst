@@ -114,6 +114,13 @@
   .empty-state p { font-size: 13.5px; margin: 0; max-width: 260px; margin-inline: auto; }
 
   .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  .card-group + .card-group { margin-top: 22px; }
+  .card-group-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 600; color: var(--ink-muted);
+    font-family: 'Inter', sans-serif; margin: 0 0 2px;
+  }
+  .card-group-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
   .loyalty-card {
     position: relative;
     aspect-ratio: 1.586; border: none; border-radius: 14px; box-shadow: 0 3px 8px rgba(36,53,43,0.15);
@@ -200,6 +207,14 @@
   .logo-preview-row { display: flex; align-items: center; gap: 10px; }
   .logo-preview-row .btn-secondary { flex: 1; }
   .logo-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: contain; background: #fff; padding: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); flex-shrink: 0; }
+
+  .member-pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .member-pill {
+    border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 7px 14px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13.5px;
+    color: var(--ink-muted); cursor: pointer;
+  }
+  .member-pill.active { background: var(--pill-color, var(--primary)); border-color: transparent; color: #fff; }
 </style>
 </head>
 <body>
@@ -283,6 +298,7 @@ function icon(name, size) {
     pipette: '<path d="M15 5l4 4"/><path d="M4 20l1-4 9-9 3 3-9 9-4 1z"/>',
     upload: '<path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 20h16"/>',
     arrowleft: '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
+    pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   };
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (paths[name] || '') + '</svg>';
 }
@@ -402,9 +418,28 @@ function cardButtonHTML(card) {
 }
 
 function cardsViewHTML() {
-  const grid = state.cards.length === 0
-    ? emptyStateHTML(icon('card', 28), 'Nog geen klantenkaarten', 'Voeg bijvoorbeeld Delhaize, Aldi, Kruidvat of Okay toe met de knop hieronder.')
-    : '<div class="card-grid">' + state.cards.map(cardButtonHTML).join('') + '</div>';
+  let grid;
+  if (state.cards.length === 0) {
+    grid = emptyStateHTML(icon('card', 28), 'Nog geen klantenkaarten', 'Voeg bijvoorbeeld Delhaize, Aldi, Kruidvat of Okay toe met de knop hieronder.');
+  } else {
+    const groups = [];
+    state.members.forEach((m) => {
+      const cards = state.cards.filter((c) => c.memberId === m.id);
+      if (cards.length) groups.push({ label: m.name, color: m.color, cards });
+    });
+    const orphan = state.cards.filter((c) => !state.members.some((m) => m.id === c.memberId));
+    if (orphan.length) groups.push({ label: 'Overige', color: null, cards: orphan });
+
+    grid = groups.map((g) =>
+      '<div class="card-group">' +
+        '<h3 class="card-group-title">' +
+          (g.color ? '<span class="card-group-dot" style="background:' + g.color + '"></span>' : '') +
+          esc(g.label) +
+        '</h3>' +
+        '<div class="card-grid">' + g.cards.map(cardButtonHTML).join('') + '</div>' +
+      '</div>'
+    ).join('');
+  }
   return (
     '<div class="view-pad">' + grid +
       '<button class="btn-primary full add-card-btn" data-action="open-add-card">' + icon('plus', 18) + ' Nieuwe klantenkaart</button>' +
@@ -471,6 +506,151 @@ function memberSheetHTML(sheet) {
       '<div class="row-gap">' + backBtn + '<button class="btn-primary full" data-action="save-member">Opslaan</button></div>' +
     '</div>';
   return sheetWrap('Nieuw gezinslid', body, sheet.closable);
+}
+
+function editCardSheetHTML(card) {
+  const memberPills = state.members.map((m) =>
+    '<button type="button" class="member-pill ' + (m.id === card.memberId ? 'active' : '') + '" data-id="' + m.id + '" style="--pill-color:' + m.color + '">' + esc(m.name) + '</button>'
+  ).join('');
+  const body =
+    '<div class="stack">' +
+      '<label class="field-label">Naam winkel</label>' +
+      '<input id="card-name-input" class="text-input" value="' + esc(card.name) + '" autocomplete="off" />' +
+      '<label class="field-label">Kaartcode / nummer</label>' +
+      '<input id="card-code-input" class="text-input" value="' + esc(card.code || '') + '" autocomplete="off" />' +
+      '<span class="field-label">Type code</span>' +
+      '<div class="code-type-toggle" id="card-type-toggle">' +
+        '<button type="button" data-type="barcode" class="' + (card.codeType !== 'qr' ? 'active' : '') + '">Streepjescode</button>' +
+        '<button type="button" data-type="qr" class="' + (card.codeType === 'qr' ? 'active' : '') + '">QR-code</button>' +
+      '</div>' +
+      '<div id="card-code-preview" class="code-box"></div>' +
+      '<span class="field-label">Logo (optioneel)</span>' +
+      '<div id="card-logo-wrap"></div>' +
+      '<input id="card-logo-input" type="file" accept="image/*" class="hidden-input" />' +
+      '<span class="field-label">Kleur van de knop</span>' +
+      '<div class="color-row">' +
+        '<input id="card-color-input" type="color" value="' + card.color + '" class="color-input" />' +
+        '<div id="card-color-preview" class="color-preview" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">' + esc(card.name) + '</div>' +
+      '</div>' +
+      (state.members.length ? (
+        '<span class="field-label">Toegevoegd door</span>' +
+        '<div class="member-pill-row" id="card-member-row">' + memberPills + '</div>'
+      ) : '') +
+      '<button class="btn-primary full" id="save-card-btn" type="button">Wijzigingen opslaan</button>' +
+    '</div>';
+  return sheetWrap('Kaart bewerken', body, true);
+}
+
+function wireEditCardSheet(card) {
+  let selectedType = card.codeType === 'qr' ? 'qr' : 'barcode';
+  let logoData = card.logo || null;
+  let selectedMemberId = card.memberId || null;
+
+  const nameInput = document.getElementById('card-name-input');
+  const codeInput = document.getElementById('card-code-input');
+  const typeToggle = document.getElementById('card-type-toggle');
+  const preview = document.getElementById('card-code-preview');
+  const logoWrap = document.getElementById('card-logo-wrap');
+  const logoInput = document.getElementById('card-logo-input');
+  const colorInput = document.getElementById('card-color-input');
+  const colorPreview = document.getElementById('card-color-preview');
+  const memberRow = document.getElementById('card-member-row');
+  const saveBtn = document.getElementById('save-card-btn');
+
+  nameInput.addEventListener('input', () => { colorPreview.textContent = nameInput.value.trim() || 'Voorbeeld'; });
+
+  function updatePreview() {
+    renderCode(preview, codeInput.value.trim(), selectedType, 180);
+  }
+  updatePreview();
+  codeInput.addEventListener('input', updatePreview);
+
+  typeToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-type]');
+    if (!btn) return;
+    selectedType = btn.dataset.type;
+    typeToggle.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
+    updatePreview();
+  });
+
+  function renderLogoWrap() {
+    logoWrap.innerHTML = '';
+    if (!logoData) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-secondary full';
+      btn.innerHTML = icon('upload', 18) + ' Kies logo';
+      btn.addEventListener('click', () => logoInput.click());
+      logoWrap.appendChild(btn);
+      return;
+    }
+    const row = document.createElement('div');
+    row.className = 'logo-preview-row';
+    const img = document.createElement('img');
+    img.src = logoData;
+    img.className = 'logo-thumb';
+    row.appendChild(img);
+    const otherBtn = document.createElement('button');
+    otherBtn.type = 'button';
+    otherBtn.className = 'btn-secondary';
+    otherBtn.textContent = 'Andere kiezen';
+    otherBtn.addEventListener('click', () => logoInput.click());
+    row.appendChild(otherBtn);
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'icon-btn muted';
+    removeBtn.innerHTML = icon('x', 16);
+    removeBtn.addEventListener('click', () => { logoData = null; renderLogoWrap(); });
+    row.appendChild(removeBtn);
+    logoWrap.appendChild(row);
+  }
+  renderLogoWrap();
+
+  logoInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 160;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        logoData = canvas.toDataURL('image/png');
+        renderLogoWrap();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  colorInput.addEventListener('input', () => {
+    colorPreview.style.background = colorInput.value;
+    colorPreview.style.color = textColorFor(colorInput.value);
+  });
+
+  if (memberRow) {
+    memberRow.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-id]');
+      if (!btn) return;
+      selectedMemberId = btn.dataset.id;
+      memberRow.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
+    });
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    const code = codeInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    if (!code) { codeInput.focus(); return; }
+    saveBtn.disabled = true;
+    await updateCard(card.id, { name, color: colorInput.value, code, codeType: selectedType, logo: logoData, memberId: selectedMemberId });
+  });
 }
 
 function addCardSheetHTML() {
@@ -545,6 +725,7 @@ function cardDetailSheetHTML(sheet) {
     '<div class="card-detail">' +
       logoHTML +
       '<div id="card-detail-code" class="code-box code-box-detail"></div>' +
+      '<button class="btn-secondary full" data-action="edit-card" data-id="' + card.id + '">' + icon('pencil', 17) + ' Kaart bewerken</button>' +
       '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
     '</div>';
   return sheetWrap(card.name, body, true);
@@ -568,6 +749,9 @@ function renderSheetRoot() {
   } else if (state.sheet.type === 'addCard') {
     root.innerHTML = addCardSheetHTML();
     wireAddCardSheet();
+  } else if (state.sheet.type === 'editCard') {
+    root.innerHTML = editCardSheetHTML(state.sheet.card);
+    wireEditCardSheet(state.sheet.card);
   } else if (state.sheet.type === 'cardDetail') {
     root.innerHTML = cardDetailSheetHTML(state.sheet);
     const container = document.getElementById('card-detail-code');
@@ -747,9 +931,10 @@ async function purgeLogItem(id) {
 
 async function saveNewCard({ name, color, code, codeType, logo }) {
   const id = uid();
+  const cm = currentMember();
   state.sheet = null;
   renderSheetRoot();
-  const data = { name, color, code, codeType };
+  const data = { name, color, code, codeType, memberId: cm ? cm.id : null };
   if (logo) data.logo = logo;
   await setDoc(doc(db, 'loyaltyCards', id), data);
 }
@@ -758,6 +943,14 @@ async function deleteCard(id) {
   state.sheet = null;
   renderSheetRoot();
   await deleteDoc(doc(db, 'loyaltyCards', id));
+}
+
+async function updateCard(id, { name, color, code, codeType, logo, memberId }) {
+  state.sheet = null;
+  renderSheetRoot();
+  const data = { name, color, code, codeType, memberId: memberId || null };
+  if (logo) data.logo = logo;
+  await setDoc(doc(db, 'loyaltyCards', id), data);
 }
 
 document.body.addEventListener('submit', async (e) => {
@@ -842,6 +1035,13 @@ document.body.addEventListener('click', async (e) => {
       renderSheetRoot();
       break;
     }
+    case 'edit-card': {
+      const card = state.cards.find((c) => c.id === id);
+      if (!card) return;
+      state.sheet = { type: 'editCard', card, closable: true };
+      renderSheetRoot();
+      break;
+    }
     case 'delete-card':
       await deleteCard(id);
       break;
@@ -909,4 +1109,3 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
-
