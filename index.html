@@ -198,7 +198,12 @@
     display: flex; align-items: center; justify-content: center; min-height: 90px;
     color: var(--ink-muted); font-size: 13px; text-align: center;
   }
-  .code-box img, .code-box canvas { max-width: 100%; height: auto; }
+  .code-box img, .code-box canvas {
+    max-width: 100%; height: auto;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
   .code-box-detail { padding: 28px; min-height: 160px; }
   .card-detail-logo {
     width: 64px; height: 64px; border-radius: 14px; object-fit: contain; background: #fff;
@@ -705,7 +710,7 @@ function renderCode(container, code, type, size) {
   } else {
     const canvas = document.createElement('canvas');
     container.appendChild(canvas);
-    const opts = { displayValue: true, width: 2, height: Math.round(size * 0.5), margin: 8 };
+    const opts = { displayValue: true, width: 3, height: Math.round(size * 0.5), margin: 8 };
     try {
       JsBarcode(canvas, code, Object.assign({ format: barcodeFormatFor(code) }, opts));
     } catch (e) {
@@ -1109,3 +1114,4 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
+
