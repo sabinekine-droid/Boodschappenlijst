@@ -145,9 +145,14 @@
   .nav-btn.active { color: var(--primary); }
 
   .sheet-backdrop { position: fixed; inset: 0; background: rgba(36,53,43,0.35); display: flex; align-items: flex-end; z-index: 40; }
+  .sheet-backdrop.align-top { align-items: flex-start; }
   .sheet {
     background: var(--bg); width: 100%; max-width: 480px; margin: 0 auto; border-radius: 20px 20px 0 0;
     padding: 10px 18px 26px; max-height: 86vh; overflow-y: auto;
+  }
+  .sheet-backdrop.align-top .sheet {
+    border-radius: 0 0 20px 20px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
   }
   .sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 10px; }
   .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -467,11 +472,12 @@ function renderApp() {
   renderNav();
 }
 
-function sheetWrap(titleText, bodyHTML, closable) {
+function sheetWrap(titleText, bodyHTML, closable, align) {
+  const isTop = align === 'top';
   return (
-    '<div class="sheet-backdrop">' +
+    '<div class="sheet-backdrop' + (isTop ? ' align-top' : '') + '">' +
       '<div class="sheet">' +
-        '<div class="sheet-handle"></div>' +
+        (isTop ? '' : '<div class="sheet-handle"></div>') +
         (titleText ? (
           '<div class="sheet-header"><h2>' + esc(titleText) + '</h2>' +
           (closable ? '<button class="icon-btn" data-action="close-sheet">' + icon('x', 20) + '</button>' : '') +
@@ -728,12 +734,12 @@ function cardDetailSheetHTML(sheet) {
   const logoHTML = card.logo ? '<img src="' + card.logo + '" alt="" class="card-detail-logo" />' : '';
   const body =
     '<div class="card-detail">' +
-      logoHTML +
       '<div id="card-detail-code" class="code-box code-box-detail"></div>' +
+      logoHTML +
       '<button class="btn-secondary full" data-action="edit-card" data-id="' + card.id + '">' + icon('pencil', 17) + ' Kaart bewerken</button>' +
       '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
     '</div>';
-  return sheetWrap(card.name, body, true);
+  return sheetWrap(card.name, body, true, 'top');
 }
 
 function renderSheetRoot() {
@@ -1114,4 +1120,3 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
-
