@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="icon-192.png" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.3/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
@@ -140,7 +141,7 @@
   }
   .nav-btn {
     flex: 1; border: none; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--ink-muted); padding: 6px 0; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 600; color: var(--ink-muted); padding: 6px 0; cursor: pointer;
   }
   .nav-btn.active { color: var(--primary); }
 
@@ -210,6 +211,27 @@
     image-rendering: crisp-edges;
   }
   .code-box-detail { padding: 28px; min-height: 160px; }
+  .wishlist-member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  .wishlist-member-btn {
+    border: none; border-radius: 16px; padding: 22px 14px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    box-shadow: 0 3px 8px rgba(36,53,43,0.15);
+  }
+  .wishlist-member-btn span {
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px; color: #fff;
+  }
+  .wishlist-header-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; }
+  .wishlist-owner-title { flex: 1; font-size: 19px; color: var(--primary-dark); }
+  .wishlist-items { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .wishlist-item-row {
+    background: var(--surface); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 1px 4px rgba(36,53,43,0.05);
+  }
+  .wishlist-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+  .wishlist-thumb-empty {
+    background: var(--primary-light); color: var(--primary-dark);
+    display: flex; align-items: center; justify-content: center;
+  }
   .card-detail-logo {
     width: 64px; height: 64px; border-radius: 14px; object-fit: contain; background: #fff;
     padding: 6px; align-self: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
@@ -309,14 +331,18 @@ function icon(name, size) {
     upload: '<path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 20h16"/>',
     arrowleft: '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
     pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    gift: '<rect x="3" y="8" width="18" height="13" rx="1.5"/><path d="M3 8h18"/><path d="M12 8v13"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 12 5 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14.5 3 12 5 12 8"/>',
+    bag: '<path d="M6.5 7h11l-1 13.5h-9L6.5 7Z"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/>',
+    share: '<circle cx="18" cy="5" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="19" r="2.4"/><line x1="8.1" y1="10.7" x2="15.9" y2="6.4"/><line x1="8.1" y1="13.3" x2="15.9" y2="17.6"/>',
   };
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (paths[name] || '') + '</svg>';
 }
 
 const state = {
   members: [], items: [], log: [], cards: [],
+  purchaseItems: [], purchaseLog: [], wishlistItems: [],
   currentMemberId: localStorage.getItem('current-member-id') || null,
-  tab: 'list', listSub: 'active',
+  tab: 'list', listSub: 'active', purchaseSub: 'active', wishlistMemberId: null,
   sheet: null,
 };
 
@@ -343,34 +369,49 @@ function renderTopbar() {
 
 function renderSegmented() {
   const root = document.getElementById('segmented-root');
-  if (state.tab !== 'list') { root.innerHTML = ''; return; }
-  root.innerHTML =
-    '<div class="segmented">' +
-      '<button class="' + (state.listSub === 'active' ? 'active' : '') + '" data-action="set-listsub" data-value="active">Lijst' + (state.items.length ? ' (' + state.items.length + ')' : '') + '</button>' +
-      '<button class="' + (state.listSub === 'log' ? 'active' : '') + '" data-action="set-listsub" data-value="log">Logboek' + (state.log.length ? ' (' + state.log.length + ')' : '') + '</button>' +
-    '</div>';
+  if (state.tab === 'list') {
+    root.innerHTML =
+      '<div class="segmented">' +
+        '<button class="' + (state.listSub === 'active' ? 'active' : '') + '" data-action="set-listsub" data-value="active">Lijst' + (state.items.length ? ' (' + state.items.length + ')' : '') + '</button>' +
+        '<button class="' + (state.listSub === 'log' ? 'active' : '') + '" data-action="set-listsub" data-value="log">Logboek' + (state.log.length ? ' (' + state.log.length + ')' : '') + '</button>' +
+      '</div>';
+  } else if (state.tab === 'purchases') {
+    root.innerHTML =
+      '<div class="segmented">' +
+        '<button class="' + (state.purchaseSub === 'active' ? 'active' : '') + '" data-action="set-purchasesub" data-value="active">Lijst' + (state.purchaseItems.length ? ' (' + state.purchaseItems.length + ')' : '') + '</button>' +
+        '<button class="' + (state.purchaseSub === 'log' ? 'active' : '') + '" data-action="set-purchasesub" data-value="log">Logboek' + (state.purchaseLog.length ? ' (' + state.purchaseLog.length + ')' : '') + '</button>' +
+      '</div>';
+  } else {
+    root.innerHTML = '';
+  }
 }
 
 function renderView() {
   const root = document.getElementById('view-root');
   if (state.tab === 'list') {
     root.innerHTML = state.listSub === 'active' ? listViewHTML() : logViewHTML();
+  } else if (state.tab === 'purchases') {
+    root.innerHTML = state.purchaseSub === 'active' ? purchasesListViewHTML() : purchasesLogViewHTML();
+  } else if (state.tab === 'wishlist') {
+    root.innerHTML = wishlistViewHTML();
+    wireWishlistView();
   } else {
     root.innerHTML = cardsViewHTML();
   }
 }
 
-function itemRowHTML(item) {
+function itemRowHTML(item, kind) {
+  kind = kind || 'item';
   const m = memberById(item.memberId);
   const meta = itemMeta(item);
   return (
     '<li class="item-row" style="border-left-color:' + (m ? m.color : 'var(--line)') + '">' +
-      '<button class="check-circle" data-action="buy-item" data-id="' + item.id + '">' + icon('check', 16) + '</button>' +
+      '<button class="check-circle" data-action="buy-' + kind + '" data-id="' + item.id + '">' + icon('check', 16) + '</button>' +
       '<div class="item-text"><span class="item-name">' + esc(item.name) + '</span>' +
         (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
       '</div>' +
       (m ? avatarHTML(m, 26) : '') +
-      '<button class="icon-btn muted" data-action="delete-item" data-id="' + item.id + '">' + icon('x', 16) + '</button>' +
+      '<button class="icon-btn muted" data-action="delete-' + kind + '" data-id="' + item.id + '">' + icon('x', 16) + '</button>' +
     '</li>'
   );
 }
@@ -396,7 +437,8 @@ function listViewHTML() {
   );
 }
 
-function logRowHTML(item) {
+function logRowHTML(item, kind) {
+  kind = kind || 'log';
   const buyer = memberById(item.boughtBy);
   const meta = [itemMeta(item), buyer ? ('door ' + buyer.name) : null].filter(Boolean).join(' · ');
   return (
@@ -404,8 +446,8 @@ function logRowHTML(item) {
       '<div class="item-text"><span class="item-name strike">' + esc(item.name) + '</span>' +
         (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
       '</div>' +
-      '<button class="icon-btn" data-action="restore-log" data-id="' + item.id + '" title="Terugzetten">' + icon('rotate', 17) + '</button>' +
-      '<button class="icon-btn muted" data-action="purge-log" data-id="' + item.id + '" title="Definitief verwijderen">' + icon('trash', 16) + '</button>' +
+      '<button class="icon-btn" data-action="restore-' + kind + '" data-id="' + item.id + '" title="Terugzetten">' + icon('rotate', 17) + '</button>' +
+      '<button class="icon-btn muted" data-action="purge-' + kind + '" data-id="' + item.id + '" title="Definitief verwijderen">' + icon('trash', 16) + '</button>' +
     '</li>'
   );
 }
@@ -414,7 +456,217 @@ function logViewHTML() {
   if (state.log.length === 0) {
     return '<div class="view-pad">' + emptyStateHTML(icon('rotate', 28), 'Logboek is leeg', 'Wat je aanvinkt als gekocht, verschijnt hier terug.') + '</div>';
   }
-  return '<div class="view-pad"><ul class="item-list">' + state.log.map(logRowHTML).join('') + '</ul></div>';
+  return '<div class="view-pad"><ul class="item-list">' + state.log.map((it) => logRowHTML(it, 'log')).join('') + '</ul></div>';
+}
+
+function purchasesListViewHTML() {
+  const itemsHTML = state.purchaseItems.length === 0
+    ? emptyStateHTML(icon('bag', 28), 'Niets op de lijst', 'Typ hieronder iets dat je wil aankopen en tik op de plus.')
+    : '<ul class="item-list">' + state.purchaseItems.map((it) => itemRowHTML(it, 'purchase')).join('') + '</ul>';
+  return (
+    '<div class="view-pad">' +
+      '<form class="add-form" data-action="submit-add-purchase">' +
+        '<div class="add-form-main">' +
+          '<input class="text-input" name="name" placeholder="Wat wil je aankopen?" autocomplete="off" />' +
+          '<button class="btn-primary square" type="submit">' + icon('plus', 20) + '</button>' +
+        '</div>' +
+        '<div class="add-form-extra">' +
+          '<input class="text-input small" name="amount" placeholder="Aantal (optioneel)" inputmode="numeric" autocomplete="off" />' +
+          '<input class="text-input small" name="weight" placeholder="Extra info (optioneel)" autocomplete="off" />' +
+        '</div>' +
+      '</form>' +
+      itemsHTML +
+    '</div>'
+  );
+}
+
+function purchasesLogViewHTML() {
+  if (state.purchaseLog.length === 0) {
+    return '<div class="view-pad">' + emptyStateHTML(icon('rotate', 28), 'Logboek is leeg', 'Wat je aanvinkt als aangekocht, verschijnt hier terug.') + '</div>';
+  }
+  return '<div class="view-pad"><ul class="item-list">' + state.purchaseLog.map((it) => logRowHTML(it, 'purchase-log')).join('') + '</ul></div>';
+}
+
+function wishlistViewHTML() {
+  if (!state.wishlistMemberId) {
+    if (state.members.length === 0) {
+      return '<div class="view-pad">' + emptyStateHTML(icon('gift', 28), 'Nog geen gezinsleden', 'Voeg eerst iemand toe via het avatarknopje rechtsboven.') + '</div>';
+    }
+    const buttons = state.members.map((m) =>
+      '<button class="wishlist-member-btn" style="background:' + m.color + '" data-action="open-wishlist" data-id="' + m.id + '">' +
+        avatarHTML(m, 44) +
+        '<span>' + esc(m.name) + '</span>' +
+      '</button>'
+    ).join('');
+    return '<div class="view-pad"><div class="wishlist-member-grid">' + buttons + '</div></div>';
+  }
+
+  const member = memberById(state.wishlistMemberId);
+  const items = state.wishlistItems.filter((i) => i.memberId === state.wishlistMemberId);
+  const itemsHTML = items.length === 0
+    ? emptyStateHTML(icon('gift', 28), 'Nog niets op dit lijstje', 'Voeg hieronder een wens toe.')
+    : '<div class="wishlist-items">' + items.map(wishlistItemRowHTML).join('') + '</div>';
+
+  return (
+    '<div class="view-pad">' +
+      '<div class="wishlist-header-row">' +
+        '<button class="icon-btn" data-action="back-to-wishlist-members" aria-label="Terug">' + icon('arrowleft', 20) + '</button>' +
+        '<h2 class="wishlist-owner-title">' + (member ? esc(member.name) : '') + '</h2>' +
+        '<button class="icon-btn" data-action="share-wishlist-pdf" data-id="' + state.wishlistMemberId + '" title="Delen als PDF">' + icon('share', 18) + '</button>' +
+      '</div>' +
+      '<div class="add-form">' +
+        '<div class="stack">' +
+          '<input id="wish-name-input" class="text-input" placeholder="Wat wens je je?" autocomplete="off" />' +
+          '<div class="add-form-extra">' +
+            '<input id="wish-store-input" class="text-input small" placeholder="Winkel (optioneel)" autocomplete="off" />' +
+            '<input id="wish-price-input" class="text-input small" placeholder="Bedrag (optioneel)" inputmode="decimal" autocomplete="off" />' +
+          '</div>' +
+          '<div id="wish-photo-wrap"></div>' +
+          '<input id="wish-photo-input" type="file" accept="image/*" class="hidden-input" />' +
+          '<button class="btn-primary full" id="wish-save-btn" type="button">' + icon('plus', 18) + ' Toevoegen</button>' +
+        '</div>' +
+      '</div>' +
+      itemsHTML +
+    '</div>'
+  );
+}
+
+function wishlistItemRowHTML(item) {
+  const meta = [item.store, item.price ? '€ ' + item.price : null].filter(Boolean).join(' · ');
+  const thumb = item.image
+    ? '<img src="' + item.image + '" alt="" class="wishlist-thumb" />'
+    : '<div class="wishlist-thumb wishlist-thumb-empty">' + icon('gift', 20) + '</div>';
+  return (
+    '<div class="wishlist-item-row">' +
+      thumb +
+      '<div class="item-text"><span class="item-name">' + esc(item.name) + '</span>' +
+        (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
+      '</div>' +
+      '<button class="icon-btn muted" data-action="delete-wishlist-item" data-id="' + item.id + '">' + icon('x', 16) + '</button>' +
+    '</div>'
+  );
+}
+
+function wireWishlistView() {
+  const nameInput = document.getElementById('wish-name-input');
+  if (!nameInput) return;
+  const storeInput = document.getElementById('wish-store-input');
+  const priceInput = document.getElementById('wish-price-input');
+  const photoWrap = document.getElementById('wish-photo-wrap');
+  const photoInput = document.getElementById('wish-photo-input');
+  const saveBtn = document.getElementById('wish-save-btn');
+  let photoData = null;
+
+  function renderPhotoWrap() {
+    photoWrap.innerHTML = '';
+    if (!photoData) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-secondary full';
+      btn.innerHTML = icon('upload', 18) + ' Foto toevoegen (optioneel)';
+      btn.addEventListener('click', () => photoInput.click());
+      photoWrap.appendChild(btn);
+      return;
+    }
+    const row = document.createElement('div');
+    row.className = 'logo-preview-row';
+    const img = document.createElement('img');
+    img.src = photoData;
+    img.className = 'logo-thumb';
+    row.appendChild(img);
+    const otherBtn = document.createElement('button');
+    otherBtn.type = 'button';
+    otherBtn.className = 'btn-secondary';
+    otherBtn.textContent = 'Andere kiezen';
+    otherBtn.addEventListener('click', () => photoInput.click());
+    row.appendChild(otherBtn);
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'icon-btn muted';
+    removeBtn.innerHTML = icon('x', 16);
+    removeBtn.addEventListener('click', () => { photoData = null; renderPhotoWrap(); });
+    row.appendChild(removeBtn);
+    photoWrap.appendChild(row);
+  }
+  renderPhotoWrap();
+
+  photoInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 300;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        photoData = canvas.toDataURL('image/jpeg', 0.85);
+        renderPhotoWrap();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    saveBtn.disabled = true;
+    await addWishlistItem({
+      name,
+      store: storeInput.value.trim(),
+      price: priceInput.value.trim(),
+      image: photoData,
+      memberId: state.wishlistMemberId,
+    });
+  });
+}
+
+function generateWishlistPDF(memberId) {
+  if (!window.jspdf) { alert('PDF-bibliotheek kon niet laden. Controleer je internetverbinding.'); return; }
+  const member = memberById(memberId);
+  const items = state.wishlistItems.filter((i) => i.memberId === memberId);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+  let y = 56;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(20);
+  pdf.text('Wensenlijst - ' + (member ? member.name : ''), 40, y);
+  y += 26;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(11);
+  if (items.length === 0) {
+    pdf.text('Nog geen items op deze wensenlijst.', 40, y);
+  }
+  items.forEach((item) => {
+    if (y > 740) { pdf.addPage(); y = 56; }
+    let imgH = 0;
+    if (item.image) {
+      try {
+        const props = pdf.getImageProperties(item.image);
+        const imgW = 64;
+        imgH = (props.height / props.width) * imgW;
+        const fmt = item.image.indexOf('image/png') !== -1 ? 'PNG' : 'JPEG';
+        pdf.addImage(item.image, fmt, 40, y, imgW, imgH);
+      } catch (e) { /* skip broken image */ }
+    }
+    const textX = item.image ? 116 : 40;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.text(item.name, textX, y + 16);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10.5);
+    const metaParts = [];
+    if (item.store) metaParts.push('Winkel: ' + item.store);
+    if (item.price) metaParts.push('Bedrag: € ' + item.price);
+    if (metaParts.length) pdf.text(metaParts.join('   ·   '), textX, y + 32);
+    y += Math.max(imgH, 46) + 14;
+  });
+  pdf.save('Wensenlijst-' + (member ? member.name.replace(/[^a-z0-9]+/gi, '-') : 'lijst') + '.pdf');
 }
 
 function cardButtonHTML(card) {
@@ -460,8 +712,10 @@ function cardsViewHTML() {
 function renderNav() {
   document.getElementById('nav-root').innerHTML =
     '<nav class="bottom-nav">' +
-      '<button class="nav-btn ' + (state.tab === 'list' ? 'active' : '') + '" data-action="set-tab" data-value="list">' + icon('cart', 20) + 'Boodschappen</button>' +
-      '<button class="nav-btn ' + (state.tab === 'cards' ? 'active' : '') + '" data-action="set-tab" data-value="cards">' + icon('card', 20) + 'Klantenkaarten</button>' +
+      '<button class="nav-btn ' + (state.tab === 'list' ? 'active' : '') + '" data-action="set-tab" data-value="list">' + icon('cart', 19) + 'Boodschappen</button>' +
+      '<button class="nav-btn ' + (state.tab === 'purchases' ? 'active' : '') + '" data-action="set-tab" data-value="purchases">' + icon('bag', 19) + 'Aankopen</button>' +
+      '<button class="nav-btn ' + (state.tab === 'wishlist' ? 'active' : '') + '" data-action="set-tab" data-value="wishlist">' + icon('gift', 19) + 'Wensenlijst</button>' +
+      '<button class="nav-btn ' + (state.tab === 'cards' ? 'active' : '') + '" data-action="set-tab" data-value="cards">' + icon('card', 19) + 'Kaarten</button>' +
     '</nav>';
 }
 
@@ -940,6 +1194,53 @@ async function purgeLogItem(id) {
   await deleteDoc(doc(db, 'shoppingLog', id));
 }
 
+async function addPurchaseItem({ name, amount, weight }) {
+  const cm = currentMember();
+  if (!cm) return;
+  const id = uid();
+  await setDoc(doc(db, 'purchaseItems', id), { name, amount, weight, memberId: cm.id, createdAt: Date.now() });
+}
+
+async function deletePurchaseItem(id) {
+  await deleteDoc(doc(db, 'purchaseItems', id));
+}
+
+async function buyPurchaseItem(id) {
+  const item = state.purchaseItems.find((i) => i.id === id);
+  if (!item) return;
+  const cm = currentMember();
+  await deleteDoc(doc(db, 'purchaseItems', id));
+  await setDoc(doc(db, 'purchaseLog', id), {
+    name: item.name, amount: item.amount, weight: item.weight, memberId: item.memberId,
+    createdAt: item.createdAt, boughtBy: cm ? cm.id : null, boughtAt: Date.now(),
+  });
+}
+
+async function restorePurchaseLogItem(id) {
+  const logItem = state.purchaseLog.find((i) => i.id === id);
+  if (!logItem) return;
+  await deleteDoc(doc(db, 'purchaseLog', id));
+  await setDoc(doc(db, 'purchaseItems', id), {
+    name: logItem.name, amount: logItem.amount, weight: logItem.weight,
+    memberId: logItem.memberId, createdAt: logItem.createdAt,
+  });
+}
+
+async function purgePurchaseLogItem(id) {
+  await deleteDoc(doc(db, 'purchaseLog', id));
+}
+
+async function addWishlistItem({ name, store, price, image, memberId }) {
+  const id = uid();
+  const data = { name, store, price, memberId, createdAt: Date.now() };
+  if (image) data.image = image;
+  await setDoc(doc(db, 'wishlistItems', id), data);
+}
+
+async function deleteWishlistItem(id) {
+  await deleteDoc(doc(db, 'wishlistItems', id));
+}
+
 async function saveNewCard({ name, color, code, codeType, logo }) {
   const id = uid();
   const cm = currentMember();
@@ -975,6 +1276,17 @@ document.body.addEventListener('submit', async (e) => {
     form.reset();
     form.elements['name'].focus();
     await addItem({ name, amount, weight });
+  }
+  if (e.target.matches && e.target.matches('[data-action="submit-add-purchase"]')) {
+    e.preventDefault();
+    const form = e.target;
+    const name = form.elements['name'].value.trim();
+    if (!name) return;
+    const amount = form.elements['amount'].value.trim();
+    const weight = form.elements['weight'].value.trim();
+    form.reset();
+    form.elements['name'].focus();
+    await addPurchaseItem({ name, amount, weight });
   }
 });
 
@@ -1035,6 +1347,37 @@ document.body.addEventListener('click', async (e) => {
     case 'purge-log':
       await purgeLogItem(id);
       break;
+    case 'set-purchasesub':
+      state.purchaseSub = value;
+      renderSegmented();
+      renderView();
+      break;
+    case 'buy-purchase':
+      await buyPurchaseItem(id);
+      break;
+    case 'delete-purchase':
+      await deletePurchaseItem(id);
+      break;
+    case 'restore-purchase-log':
+      await restorePurchaseLogItem(id);
+      break;
+    case 'purge-purchase-log':
+      await purgePurchaseLogItem(id);
+      break;
+    case 'open-wishlist':
+      state.wishlistMemberId = id;
+      renderView();
+      break;
+    case 'back-to-wishlist-members':
+      state.wishlistMemberId = null;
+      renderView();
+      break;
+    case 'delete-wishlist-item':
+      await deleteWishlistItem(id);
+      break;
+    case 'share-wishlist-pdf':
+      generateWishlistPDF(id);
+      break;
     case 'open-add-card':
       state.sheet = { type: 'addCard', closable: true };
       renderSheetRoot();
@@ -1059,7 +1402,7 @@ document.body.addEventListener('click', async (e) => {
   }
 });
 
-const ready = { members: false, items: false, log: false, cards: false };
+const ready = { members: false, items: false, log: false, cards: false, purchaseItems: false, purchaseLog: false, wishlistItems: false };
 function checkReady() {
   if (Object.values(ready).every(Boolean)) {
     document.getElementById('loading-view').style.display = 'none';
@@ -1095,6 +1438,29 @@ function startListeners() {
     checkReady();
     renderSegmented();
     if (state.tab === 'list' && state.listSub === 'log') renderView();
+  }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'purchaseItems'), (snap) => {
+    state.purchaseItems = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
+    ready.purchaseItems = true;
+    checkReady();
+    renderSegmented();
+    if (state.tab === 'purchases' && state.purchaseSub === 'active') renderView();
+  }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'purchaseLog'), (snap) => {
+    state.purchaseLog = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.boughtAt - a.boughtAt);
+    ready.purchaseLog = true;
+    checkReady();
+    renderSegmented();
+    if (state.tab === 'purchases' && state.purchaseSub === 'log') renderView();
+  }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'wishlistItems'), (snap) => {
+    state.wishlistItems = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
+    ready.wishlistItems = true;
+    checkReady();
+    if (state.tab === 'wishlist') renderView();
   }, (err) => showFatalError(err));
 
   onSnapshot(collection(db, 'loyaltyCards'), (snap) => {
