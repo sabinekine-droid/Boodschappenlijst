@@ -338,8 +338,8 @@ function icon(name, size) {
     trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>',
     rotate: '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/>',
     cart: '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.8h8.2a2 2 0 0 0 2-1.6L21 8H6"/>',
-    bag: '<path d="M6 9l1.05-2.1A2 2 0 0 1 9 6h6a2 2 0 0 1 1.95 2.1L18 9M6 9h12v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9m3-3V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>',
-    gift: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>',
+    bag: '<path d="M6.5 7h11l-1 13.5h-9L6.5 7Z"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/>',
+    gift: '<rect x="3" y="8" width="18" height="13" rx="1.5"/><path d="M3 8h18"/><path d="M12 8v13"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 12 5 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14.5 3 12 5 12 8"/>',
     card: '<rect x="2" y="5" width="20" height="14" rx="2.5"/><line x1="2" y1="10" x2="22" y2="10"/>',
     pipette: '<path d="M15 5l4 4"/><path d="M4 20l1-4 9-9 3 3-9 9-4 1z"/>',
     upload: '<path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 20h16"/>',
@@ -555,65 +555,12 @@ function wishlistViewHTML() {
         '<button class="icon-btn" data-action="back-wishlist" aria-label="Terug">' + icon('arrowleft', 20) + '</button>' +
         (member && member.wishlistPhoto ? '<img src="' + member.wishlistPhoto + '" alt="" class="wishlist-owner-photo" />' : '') +
         '<h2 class="wishlist-owner-title">' + (member ? esc(member.name) : '') + '</h2>' +
+        '<button class="btn-primary square" data-action="open-add-wishlist-item" data-id="' + state.wishlistMemberId + '" aria-label="Item toevoegen">' + icon('plus', 20) + '</button>' +
       '</div>' +
-      '<form class="add-form" data-action="submit-wishlist-item">' +
-        '<div class="add-form-main">' +
-          '<input class="text-input" name="name" placeholder="Productnaam" autocomplete="off" />' +
-          '<button class="btn-primary square" type="submit">' + icon('plus', 20) + '</button>' +
-        '</div>' +
-        '<div class="add-form-extra">' +
-          '<input class="text-input small" name="store" placeholder="Winkel" autocomplete="off" />' +
-          '<input class="text-input small" name="price" placeholder="Prijs" autocomplete="off" />' +
-        '</div>' +
-        '<div class="add-form-extra">' +
-          '<input class="text-input small" name="link" placeholder="Link (optioneel)" autocomplete="off" />' +
-        '</div>' +
-        '<label class="field-label">Foto (optioneel)</label>' +
-        '<div id="wishlist-photo-preview"></div>' +
-        '<button class="btn-secondary full" type="button" id="wishlist-photo-upload">' + icon('upload', 16) + ' Foto kiezen</button>' +
-        '<input id="wishlist-photo-input" type="file" accept="image/*" class="hidden-input" />' +
-      '</form>' +
       itemsHTML +
       (state.currentMemberId === state.wishlistMemberId ? '<button class="btn-secondary full" style="margin-top:16px;" data-action="upload-member-photo" data-id="' + state.wishlistMemberId + '">' + icon('upload', 18) + ' Mijn foto</button>' : '') +
     '</div>'
   );
-
-  // Wire up photo upload
-  setTimeout(() => {
-    const uploadBtn = document.getElementById('wishlist-photo-upload');
-    const photoInput = document.getElementById('wishlist-photo-input');
-    const preview = document.getElementById('wishlist-photo-preview');
-    const form = document.querySelector('form[data-action="submit-wishlist-item"]');
-    if (uploadBtn && photoInput && form) {
-      uploadBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        photoInput.click();
-      });
-      photoInput.addEventListener('change', (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const img = new Image();
-          img.onload = () => {
-            const maxDim = 500;
-            const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-            const w = Math.round(img.width * scale);
-            const h = Math.round(img.height * scale);
-            const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            const photoData = canvas.toDataURL('image/jpeg', 0.85);
-            form.dataset.photoData = photoData;
-            if (preview) preview.innerHTML = '<img src="' + photoData + '" alt="" style="width:100%;border-radius:12px;margin:8px 0;" />';
-          };
-          img.src = reader.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-  }, 0);
 
   return html;
 }
@@ -1036,6 +983,78 @@ function wireEditWishlistItemSheet(item) {
   });
 }
 
+function addWishlistItemSheetHTML(memberId) {
+  const body =
+    '<div class="stack">' +
+      '<label class="field-label">Productnaam</label>' +
+      '<input id="add-wish-name-input" class="text-input" placeholder="Productnaam" autocomplete="off" />' +
+      '<label class="field-label">Winkel</label>' +
+      '<input id="add-wish-store-input" class="text-input" placeholder="Winkel" autocomplete="off" />' +
+      '<label class="field-label">Prijs</label>' +
+      '<input id="add-wish-price-input" class="text-input" placeholder="Prijs" autocomplete="off" />' +
+      '<label class="field-label">Link (optioneel)</label>' +
+      '<input id="add-wish-link-input" class="text-input" placeholder="https://..." autocomplete="off" />' +
+      '<label class="field-label">Foto (optioneel)</label>' +
+      '<div id="add-wish-photo-preview"></div>' +
+      '<button class="btn-secondary full" type="button" id="add-wish-photo-upload-btn">' + icon('upload', 16) + ' Foto kiezen</button>' +
+      '<input id="add-wish-photo-file" type="file" accept="image/*" class="hidden-input" />' +
+      '<button class="btn-primary full" id="save-wish-item-btn" type="button">Toevoegen</button>' +
+    '</div>';
+  return sheetWrap('Item toevoegen', body, true);
+}
+
+function wireAddWishlistItemSheet(memberId) {
+  const nameInput = document.getElementById('add-wish-name-input');
+  const uploadBtn = document.getElementById('add-wish-photo-upload-btn');
+  const fileInput = document.getElementById('add-wish-photo-file');
+  const preview = document.getElementById('add-wish-photo-preview');
+  const saveBtn = document.getElementById('save-wish-item-btn');
+  let photoData = '';
+
+  nameInput.focus();
+
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 500;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        photoData = canvas.toDataURL('image/jpeg', 0.85);
+        preview.innerHTML = '<img src="' + photoData + '" alt="" style="width:100%;border-radius:12px;margin-bottom:8px;" />';
+        uploadBtn.innerHTML = icon('upload', 16) + ' Andere foto kiezen';
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    saveBtn.disabled = true;
+    const store = document.getElementById('add-wish-store-input').value.trim();
+    const price = document.getElementById('add-wish-price-input').value.trim();
+    const link = document.getElementById('add-wish-link-input').value.trim();
+    await addWishlistItem({ name, store, price, link, photo: photoData, memberId });
+    state.sheet = null;
+    renderSheetRoot();
+  });
+
+  nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+  });
+}
+
 function uploadMemberPhotoSheetHTML(memberId) {
   const body =
     '<div class="stack">' +
@@ -1123,6 +1142,9 @@ function renderSheetRoot() {
   } else if (state.sheet.type === 'uploadMemberPhoto') {
     root.innerHTML = uploadMemberPhotoSheetHTML(state.sheet.memberId);
     wireUploadMemberPhotoSheet(state.sheet.memberId);
+  } else if (state.sheet.type === 'addWishlistItem') {
+    root.innerHTML = addWishlistItemSheetHTML(state.sheet.memberId);
+    wireAddWishlistItemSheet(state.sheet.memberId);
   }
 }
 
@@ -1398,21 +1420,6 @@ document.body.addEventListener('submit', async (e) => {
     form.reset();
     form.elements['name'].focus();
     await addPurchase({ name, amount, weight });
-  } else if (e.target.matches && e.target.matches('[data-action="submit-wishlist-item"]')) {
-    e.preventDefault();
-    const form = e.target;
-    const name = form.elements['name'].value.trim();
-    if (!name) return;
-    const store = form.elements['store'].value.trim();
-    const price = form.elements['price'].value.trim();
-    const link = form.elements['link'].value.trim();
-    const photo = form.dataset.photoData || '';
-    form.reset();
-    delete form.dataset.photoData;
-    const preview = document.getElementById('wishlist-photo-preview');
-    if (preview) preview.innerHTML = '';
-    form.elements['name'].focus();
-    await addWishlistItem({ name, store, price, link, photo, memberId: state.wishlistMemberId });
   }
 });
 
@@ -1510,6 +1517,10 @@ document.body.addEventListener('click', async (e) => {
     }
     case 'upload-member-photo':
       state.sheet = { type: 'uploadMemberPhoto', memberId: id, closable: true };
+      renderSheetRoot();
+      break;
+    case 'open-add-wishlist-item':
+      state.sheet = { type: 'addWishlistItem', memberId: id, closable: true };
       renderSheetRoot();
       break;
     case 'open-add-card':
@@ -1620,3 +1631,4 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
+
