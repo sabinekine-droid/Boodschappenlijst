@@ -10,9 +10,6 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.3/JsBarcode.all.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
@@ -115,22 +112,10 @@
   .empty-state p { font-size: 13.5px; margin: 0; max-width: 260px; margin-inline: auto; }
 
   .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-  .card-group + .card-group { margin-top: 22px; }
-  .card-group-title {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 14px; font-weight: 600; color: var(--ink-muted);
-    font-family: 'Inter', sans-serif; margin: 0 0 2px;
-  }
-  .card-group-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
   .loyalty-card {
-    position: relative;
     aspect-ratio: 1.586; border: none; border-radius: 14px; box-shadow: 0 3px 8px rgba(36,53,43,0.15);
     display: flex; align-items: flex-end; padding: 12px; cursor: pointer;
     font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px; text-align: left;
-  }
-  .loyalty-card-logo {
-    position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 8px;
-    background: #fff; object-fit: contain; padding: 3px; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   }
   .add-card-btn { margin-top: 18px; }
 
@@ -141,19 +126,14 @@
   }
   .nav-btn {
     flex: 1; border: none; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 600; color: var(--ink-muted); padding: 6px 0; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--ink-muted); padding: 6px 0; cursor: pointer;
   }
   .nav-btn.active { color: var(--primary); }
 
   .sheet-backdrop { position: fixed; inset: 0; background: rgba(36,53,43,0.35); display: flex; align-items: flex-end; z-index: 40; }
-  .sheet-backdrop.align-top { align-items: flex-start; }
   .sheet {
     background: var(--bg); width: 100%; max-width: 480px; margin: 0 auto; border-radius: 20px 20px 0 0;
     padding: 10px 18px 26px; max-height: 86vh; overflow-y: auto;
-  }
-  .sheet-backdrop.align-top .sheet {
-    border-radius: 0 0 20px 20px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
   }
   .sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 10px; }
   .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -192,61 +172,6 @@
     width: 100%; aspect-ratio: 1.586; border-radius: 14px; display: flex; align-items: center; justify-content: center;
     font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 18px;
   }
-
-  .code-type-toggle { display: flex; background: var(--surface); border-radius: 12px; padding: 4px; gap: 4px; }
-  .code-type-toggle button {
-    flex: 1; border: none; background: transparent; padding: 9px 0; border-radius: 9px;
-    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13.5px; color: var(--ink-muted); cursor: pointer;
-  }
-  .code-type-toggle button.active { background: var(--primary); color: #fff; }
-  .code-box {
-    background: #fff; border-radius: 14px; padding: 18px;
-    display: flex; align-items: center; justify-content: center; min-height: 90px;
-    color: var(--ink-muted); font-size: 13px; text-align: center;
-  }
-  .code-box img, .code-box canvas {
-    max-width: 100%; height: auto;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-  .code-box-detail { padding: 28px; min-height: 160px; }
-  .wishlist-member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-  .wishlist-member-btn {
-    border: none; border-radius: 16px; padding: 22px 14px; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
-    box-shadow: 0 3px 8px rgba(36,53,43,0.15);
-  }
-  .wishlist-member-btn span {
-    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px; color: #fff;
-  }
-  .wishlist-header-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; }
-  .wishlist-owner-title { flex: 1; font-size: 19px; color: var(--primary-dark); }
-  .wishlist-items { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-  .wishlist-item-row {
-    background: var(--surface); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 12px;
-    box-shadow: 0 1px 4px rgba(36,53,43,0.05);
-  }
-  .wishlist-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
-  .wishlist-thumb-empty {
-    background: var(--primary-light); color: var(--primary-dark);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .card-detail-logo {
-    width: 64px; height: 64px; border-radius: 14px; object-fit: contain; background: #fff;
-    padding: 6px; align-self: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  }
-  .logo-preview-row { display: flex; align-items: center; gap: 10px; }
-  .logo-preview-row .btn-secondary { flex: 1; }
-  .logo-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: contain; background: #fff; padding: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); flex-shrink: 0; }
-
-  .member-pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .member-pill {
-    border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
-    padding: 7px 14px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13.5px;
-    color: var(--ink-muted); cursor: pointer;
-  }
-  .member-pill.active { background: var(--pill-color, var(--primary)); border-color: transparent; color: #fff; }
 </style>
 </head>
 <body>
@@ -265,7 +190,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot,
+  getFirestore, collection, doc, setDoc, deleteDoc, getDoc, onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -330,19 +255,14 @@ function icon(name, size) {
     pipette: '<path d="M15 5l4 4"/><path d="M4 20l1-4 9-9 3 3-9 9-4 1z"/>',
     upload: '<path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 20h16"/>',
     arrowleft: '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
-    pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
-    gift: '<rect x="3" y="8" width="18" height="13" rx="1.5"/><path d="M3 8h18"/><path d="M12 8v13"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 12 5 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14.5 3 12 5 12 8"/>',
-    bag: '<path d="M6.5 7h11l-1 13.5h-9L6.5 7Z"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/>',
-    share: '<circle cx="18" cy="5" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="19" r="2.4"/><line x1="8.1" y1="10.7" x2="15.9" y2="6.4"/><line x1="8.1" y1="13.3" x2="15.9" y2="17.6"/>',
   };
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' + (paths[name] || '') + '</svg>';
 }
 
 const state = {
   members: [], items: [], log: [], cards: [],
-  purchaseItems: [], purchaseLog: [], wishlistItems: [],
   currentMemberId: localStorage.getItem('current-member-id') || null,
-  tab: 'list', listSub: 'active', purchaseSub: 'active', wishlistMemberId: null,
+  tab: 'list', listSub: 'active',
   sheet: null,
 };
 
@@ -369,49 +289,34 @@ function renderTopbar() {
 
 function renderSegmented() {
   const root = document.getElementById('segmented-root');
-  if (state.tab === 'list') {
-    root.innerHTML =
-      '<div class="segmented">' +
-        '<button class="' + (state.listSub === 'active' ? 'active' : '') + '" data-action="set-listsub" data-value="active">Lijst' + (state.items.length ? ' (' + state.items.length + ')' : '') + '</button>' +
-        '<button class="' + (state.listSub === 'log' ? 'active' : '') + '" data-action="set-listsub" data-value="log">Logboek' + (state.log.length ? ' (' + state.log.length + ')' : '') + '</button>' +
-      '</div>';
-  } else if (state.tab === 'purchases') {
-    root.innerHTML =
-      '<div class="segmented">' +
-        '<button class="' + (state.purchaseSub === 'active' ? 'active' : '') + '" data-action="set-purchasesub" data-value="active">Lijst' + (state.purchaseItems.length ? ' (' + state.purchaseItems.length + ')' : '') + '</button>' +
-        '<button class="' + (state.purchaseSub === 'log' ? 'active' : '') + '" data-action="set-purchasesub" data-value="log">Logboek' + (state.purchaseLog.length ? ' (' + state.purchaseLog.length + ')' : '') + '</button>' +
-      '</div>';
-  } else {
-    root.innerHTML = '';
-  }
+  if (state.tab !== 'list') { root.innerHTML = ''; return; }
+  root.innerHTML =
+    '<div class="segmented">' +
+      '<button class="' + (state.listSub === 'active' ? 'active' : '') + '" data-action="set-listsub" data-value="active">Lijst' + (state.items.length ? ' (' + state.items.length + ')' : '') + '</button>' +
+      '<button class="' + (state.listSub === 'log' ? 'active' : '') + '" data-action="set-listsub" data-value="log">Logboek' + (state.log.length ? ' (' + state.log.length + ')' : '') + '</button>' +
+    '</div>';
 }
 
 function renderView() {
   const root = document.getElementById('view-root');
   if (state.tab === 'list') {
     root.innerHTML = state.listSub === 'active' ? listViewHTML() : logViewHTML();
-  } else if (state.tab === 'purchases') {
-    root.innerHTML = state.purchaseSub === 'active' ? purchasesListViewHTML() : purchasesLogViewHTML();
-  } else if (state.tab === 'wishlist') {
-    root.innerHTML = wishlistViewHTML();
-    wireWishlistView();
   } else {
     root.innerHTML = cardsViewHTML();
   }
 }
 
-function itemRowHTML(item, kind) {
-  kind = kind || 'item';
+function itemRowHTML(item) {
   const m = memberById(item.memberId);
   const meta = itemMeta(item);
   return (
     '<li class="item-row" style="border-left-color:' + (m ? m.color : 'var(--line)') + '">' +
-      '<button class="check-circle" data-action="buy-' + kind + '" data-id="' + item.id + '">' + icon('check', 16) + '</button>' +
+      '<button class="check-circle" data-action="buy-item" data-id="' + item.id + '">' + icon('check', 16) + '</button>' +
       '<div class="item-text"><span class="item-name">' + esc(item.name) + '</span>' +
         (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
       '</div>' +
       (m ? avatarHTML(m, 26) : '') +
-      '<button class="icon-btn muted" data-action="delete-' + kind + '" data-id="' + item.id + '">' + icon('x', 16) + '</button>' +
+      '<button class="icon-btn muted" data-action="delete-item" data-id="' + item.id + '">' + icon('x', 16) + '</button>' +
     '</li>'
   );
 }
@@ -437,8 +342,7 @@ function listViewHTML() {
   );
 }
 
-function logRowHTML(item, kind) {
-  kind = kind || 'log';
+function logRowHTML(item) {
   const buyer = memberById(item.boughtBy);
   const meta = [itemMeta(item), buyer ? ('door ' + buyer.name) : null].filter(Boolean).join(' · ');
   return (
@@ -446,8 +350,8 @@ function logRowHTML(item, kind) {
       '<div class="item-text"><span class="item-name strike">' + esc(item.name) + '</span>' +
         (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
       '</div>' +
-      '<button class="icon-btn" data-action="restore-' + kind + '" data-id="' + item.id + '" title="Terugzetten">' + icon('rotate', 17) + '</button>' +
-      '<button class="icon-btn muted" data-action="purge-' + kind + '" data-id="' + item.id + '" title="Definitief verwijderen">' + icon('trash', 16) + '</button>' +
+      '<button class="icon-btn" data-action="restore-log" data-id="' + item.id + '" title="Terugzetten">' + icon('rotate', 17) + '</button>' +
+      '<button class="icon-btn muted" data-action="purge-log" data-id="' + item.id + '" title="Definitief verwijderen">' + icon('trash', 16) + '</button>' +
     '</li>'
   );
 }
@@ -456,252 +360,21 @@ function logViewHTML() {
   if (state.log.length === 0) {
     return '<div class="view-pad">' + emptyStateHTML(icon('rotate', 28), 'Logboek is leeg', 'Wat je aanvinkt als gekocht, verschijnt hier terug.') + '</div>';
   }
-  return '<div class="view-pad"><ul class="item-list">' + state.log.map((it) => logRowHTML(it, 'log')).join('') + '</ul></div>';
-}
-
-function purchasesListViewHTML() {
-  const itemsHTML = state.purchaseItems.length === 0
-    ? emptyStateHTML(icon('bag', 28), 'Niets op de lijst', 'Typ hieronder iets dat je wil aankopen en tik op de plus.')
-    : '<ul class="item-list">' + state.purchaseItems.map((it) => itemRowHTML(it, 'purchase')).join('') + '</ul>';
-  return (
-    '<div class="view-pad">' +
-      '<form class="add-form" data-action="submit-add-purchase">' +
-        '<div class="add-form-main">' +
-          '<input class="text-input" name="name" placeholder="Wat wil je aankopen?" autocomplete="off" />' +
-          '<button class="btn-primary square" type="submit">' + icon('plus', 20) + '</button>' +
-        '</div>' +
-        '<div class="add-form-extra">' +
-          '<input class="text-input small" name="amount" placeholder="Aantal (optioneel)" inputmode="numeric" autocomplete="off" />' +
-          '<input class="text-input small" name="weight" placeholder="Extra info (optioneel)" autocomplete="off" />' +
-        '</div>' +
-      '</form>' +
-      itemsHTML +
-    '</div>'
-  );
-}
-
-function purchasesLogViewHTML() {
-  if (state.purchaseLog.length === 0) {
-    return '<div class="view-pad">' + emptyStateHTML(icon('rotate', 28), 'Logboek is leeg', 'Wat je aanvinkt als aangekocht, verschijnt hier terug.') + '</div>';
-  }
-  return '<div class="view-pad"><ul class="item-list">' + state.purchaseLog.map((it) => logRowHTML(it, 'purchase-log')).join('') + '</ul></div>';
-}
-
-function wishlistViewHTML() {
-  if (!state.wishlistMemberId) {
-    if (state.members.length === 0) {
-      return '<div class="view-pad">' + emptyStateHTML(icon('gift', 28), 'Nog geen gezinsleden', 'Voeg eerst iemand toe via het avatarknopje rechtsboven.') + '</div>';
-    }
-    const buttons = state.members.map((m) =>
-      '<button class="wishlist-member-btn" style="background:' + m.color + '" data-action="open-wishlist" data-id="' + m.id + '">' +
-        avatarHTML(m, 44) +
-        '<span>' + esc(m.name) + '</span>' +
-      '</button>'
-    ).join('');
-    return '<div class="view-pad"><div class="wishlist-member-grid">' + buttons + '</div></div>';
-  }
-
-  const member = memberById(state.wishlistMemberId);
-  const items = state.wishlistItems.filter((i) => i.memberId === state.wishlistMemberId);
-  const itemsHTML = items.length === 0
-    ? emptyStateHTML(icon('gift', 28), 'Nog niets op dit lijstje', 'Voeg hieronder een wens toe.')
-    : '<div class="wishlist-items">' + items.map(wishlistItemRowHTML).join('') + '</div>';
-
-  return (
-    '<div class="view-pad">' +
-      '<div class="wishlist-header-row">' +
-        '<button class="icon-btn" data-action="back-to-wishlist-members" aria-label="Terug">' + icon('arrowleft', 20) + '</button>' +
-        '<h2 class="wishlist-owner-title">' + (member ? esc(member.name) : '') + '</h2>' +
-        '<button class="icon-btn" data-action="share-wishlist-pdf" data-id="' + state.wishlistMemberId + '" title="Delen als PDF">' + icon('share', 18) + '</button>' +
-      '</div>' +
-      '<div class="add-form">' +
-        '<div class="stack">' +
-          '<input id="wish-name-input" class="text-input" placeholder="Wat wens je je?" autocomplete="off" />' +
-          '<div class="add-form-extra">' +
-            '<input id="wish-store-input" class="text-input small" placeholder="Winkel (optioneel)" autocomplete="off" />' +
-            '<input id="wish-price-input" class="text-input small" placeholder="Bedrag (optioneel)" inputmode="decimal" autocomplete="off" />' +
-          '</div>' +
-          '<div id="wish-photo-wrap"></div>' +
-          '<input id="wish-photo-input" type="file" accept="image/*" class="hidden-input" />' +
-          '<button class="btn-primary full" id="wish-save-btn" type="button">' + icon('plus', 18) + ' Toevoegen</button>' +
-        '</div>' +
-      '</div>' +
-      itemsHTML +
-    '</div>'
-  );
-}
-
-function wishlistItemRowHTML(item) {
-  const meta = [item.store, item.price ? '€ ' + item.price : null].filter(Boolean).join(' · ');
-  const thumb = item.image
-    ? '<img src="' + item.image + '" alt="" class="wishlist-thumb" />'
-    : '<div class="wishlist-thumb wishlist-thumb-empty">' + icon('gift', 20) + '</div>';
-  return (
-    '<div class="wishlist-item-row">' +
-      thumb +
-      '<div class="item-text"><span class="item-name">' + esc(item.name) + '</span>' +
-        (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
-      '</div>' +
-      '<button class="icon-btn muted" data-action="delete-wishlist-item" data-id="' + item.id + '">' + icon('x', 16) + '</button>' +
-    '</div>'
-  );
-}
-
-function wireWishlistView() {
-  const nameInput = document.getElementById('wish-name-input');
-  if (!nameInput) return;
-  const storeInput = document.getElementById('wish-store-input');
-  const priceInput = document.getElementById('wish-price-input');
-  const photoWrap = document.getElementById('wish-photo-wrap');
-  const photoInput = document.getElementById('wish-photo-input');
-  const saveBtn = document.getElementById('wish-save-btn');
-  let photoData = null;
-
-  function renderPhotoWrap() {
-    photoWrap.innerHTML = '';
-    if (!photoData) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn-secondary full';
-      btn.innerHTML = icon('upload', 18) + ' Foto toevoegen (optioneel)';
-      btn.addEventListener('click', () => photoInput.click());
-      photoWrap.appendChild(btn);
-      return;
-    }
-    const row = document.createElement('div');
-    row.className = 'logo-preview-row';
-    const img = document.createElement('img');
-    img.src = photoData;
-    img.className = 'logo-thumb';
-    row.appendChild(img);
-    const otherBtn = document.createElement('button');
-    otherBtn.type = 'button';
-    otherBtn.className = 'btn-secondary';
-    otherBtn.textContent = 'Andere kiezen';
-    otherBtn.addEventListener('click', () => photoInput.click());
-    row.appendChild(otherBtn);
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'icon-btn muted';
-    removeBtn.innerHTML = icon('x', 16);
-    removeBtn.addEventListener('click', () => { photoData = null; renderPhotoWrap(); });
-    row.appendChild(removeBtn);
-    photoWrap.appendChild(row);
-  }
-  renderPhotoWrap();
-
-  photoInput.addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const maxDim = 300;
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        photoData = canvas.toDataURL('image/jpeg', 0.85);
-        renderPhotoWrap();
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  saveBtn.addEventListener('click', async () => {
-    const name = nameInput.value.trim();
-    if (!name) { nameInput.focus(); return; }
-    saveBtn.disabled = true;
-    await addWishlistItem({
-      name,
-      store: storeInput.value.trim(),
-      price: priceInput.value.trim(),
-      image: photoData,
-      memberId: state.wishlistMemberId,
-    });
-  });
-}
-
-function generateWishlistPDF(memberId) {
-  if (!window.jspdf) { alert('PDF-bibliotheek kon niet laden. Controleer je internetverbinding.'); return; }
-  const member = memberById(memberId);
-  const items = state.wishlistItems.filter((i) => i.memberId === memberId);
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-  let y = 56;
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(20);
-  pdf.text('Wensenlijst - ' + (member ? member.name : ''), 40, y);
-  y += 26;
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(11);
-  if (items.length === 0) {
-    pdf.text('Nog geen items op deze wensenlijst.', 40, y);
-  }
-  items.forEach((item) => {
-    if (y > 740) { pdf.addPage(); y = 56; }
-    let imgH = 0;
-    if (item.image) {
-      try {
-        const props = pdf.getImageProperties(item.image);
-        const imgW = 64;
-        imgH = (props.height / props.width) * imgW;
-        const fmt = item.image.indexOf('image/png') !== -1 ? 'PNG' : 'JPEG';
-        pdf.addImage(item.image, fmt, 40, y, imgW, imgH);
-      } catch (e) { /* skip broken image */ }
-    }
-    const textX = item.image ? 116 : 40;
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.text(item.name, textX, y + 16);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10.5);
-    const metaParts = [];
-    if (item.store) metaParts.push('Winkel: ' + item.store);
-    if (item.price) metaParts.push('Bedrag: € ' + item.price);
-    if (metaParts.length) pdf.text(metaParts.join('   ·   '), textX, y + 32);
-    y += Math.max(imgH, 46) + 14;
-  });
-  pdf.save('Wensenlijst-' + (member ? member.name.replace(/[^a-z0-9]+/gi, '-') : 'lijst') + '.pdf');
+  return '<div class="view-pad"><ul class="item-list">' + state.log.map(logRowHTML).join('') + '</ul></div>';
 }
 
 function cardButtonHTML(card) {
-  const logoHTML = card.logo ? '<img src="' + card.logo + '" alt="" class="loyalty-card-logo" />' : '';
   return (
     '<button class="loyalty-card" style="background:' + card.color + '" data-action="open-card" data-id="' + card.id + '">' +
-      logoHTML +
       '<span style="color:' + textColorFor(card.color) + '">' + esc(card.name) + '</span>' +
     '</button>'
   );
 }
 
 function cardsViewHTML() {
-  let grid;
-  if (state.cards.length === 0) {
-    grid = emptyStateHTML(icon('card', 28), 'Nog geen klantenkaarten', 'Voeg bijvoorbeeld Delhaize, Aldi, Kruidvat of Okay toe met de knop hieronder.');
-  } else {
-    const groups = [];
-    state.members.forEach((m) => {
-      const cards = state.cards.filter((c) => c.memberId === m.id);
-      if (cards.length) groups.push({ label: m.name, color: m.color, cards });
-    });
-    const orphan = state.cards.filter((c) => !state.members.some((m) => m.id === c.memberId));
-    if (orphan.length) groups.push({ label: 'Overige', color: null, cards: orphan });
-
-    grid = groups.map((g) =>
-      '<div class="card-group">' +
-        '<h3 class="card-group-title">' +
-          (g.color ? '<span class="card-group-dot" style="background:' + g.color + '"></span>' : '') +
-          esc(g.label) +
-        '</h3>' +
-        '<div class="card-grid">' + g.cards.map(cardButtonHTML).join('') + '</div>' +
-      '</div>'
-    ).join('');
-  }
+  const grid = state.cards.length === 0
+    ? emptyStateHTML(icon('card', 28), 'Nog geen klantenkaarten', 'Voeg bijvoorbeeld Delhaize, Aldi, Kruidvat of Okay toe met de knop hieronder.')
+    : '<div class="card-grid">' + state.cards.map(cardButtonHTML).join('') + '</div>';
   return (
     '<div class="view-pad">' + grid +
       '<button class="btn-primary full add-card-btn" data-action="open-add-card">' + icon('plus', 18) + ' Nieuwe klantenkaart</button>' +
@@ -712,10 +385,8 @@ function cardsViewHTML() {
 function renderNav() {
   document.getElementById('nav-root').innerHTML =
     '<nav class="bottom-nav">' +
-      '<button class="nav-btn ' + (state.tab === 'list' ? 'active' : '') + '" data-action="set-tab" data-value="list">' + icon('cart', 19) + 'Boodschappen</button>' +
-      '<button class="nav-btn ' + (state.tab === 'purchases' ? 'active' : '') + '" data-action="set-tab" data-value="purchases">' + icon('bag', 19) + 'Aankopen</button>' +
-      '<button class="nav-btn ' + (state.tab === 'wishlist' ? 'active' : '') + '" data-action="set-tab" data-value="wishlist">' + icon('gift', 19) + 'Wensenlijst</button>' +
-      '<button class="nav-btn ' + (state.tab === 'cards' ? 'active' : '') + '" data-action="set-tab" data-value="cards">' + icon('card', 19) + 'Kaarten</button>' +
+      '<button class="nav-btn ' + (state.tab === 'list' ? 'active' : '') + '" data-action="set-tab" data-value="list">' + icon('cart', 20) + 'Boodschappen</button>' +
+      '<button class="nav-btn ' + (state.tab === 'cards' ? 'active' : '') + '" data-action="set-tab" data-value="cards">' + icon('card', 20) + 'Klantenkaarten</button>' +
     '</nav>';
 }
 
@@ -726,12 +397,11 @@ function renderApp() {
   renderNav();
 }
 
-function sheetWrap(titleText, bodyHTML, closable, align) {
-  const isTop = align === 'top';
+function sheetWrap(titleText, bodyHTML, closable) {
   return (
-    '<div class="sheet-backdrop' + (isTop ? ' align-top' : '') + '">' +
+    '<div class="sheet-backdrop">' +
       '<div class="sheet">' +
-        (isTop ? '' : '<div class="sheet-handle"></div>') +
+        '<div class="sheet-handle"></div>' +
         (titleText ? (
           '<div class="sheet-header"><h2>' + esc(titleText) + '</h2>' +
           (closable ? '<button class="icon-btn" data-action="close-sheet">' + icon('x', 20) + '</button>' : '') +
@@ -773,169 +443,16 @@ function memberSheetHTML(sheet) {
   return sheetWrap('Nieuw gezinslid', body, sheet.closable);
 }
 
-function editCardSheetHTML(card) {
-  const memberPills = state.members.map((m) =>
-    '<button type="button" class="member-pill ' + (m.id === card.memberId ? 'active' : '') + '" data-id="' + m.id + '" style="--pill-color:' + m.color + '">' + esc(m.name) + '</button>'
-  ).join('');
-  const body =
-    '<div class="stack">' +
-      '<label class="field-label">Naam winkel</label>' +
-      '<input id="card-name-input" class="text-input" value="' + esc(card.name) + '" autocomplete="off" />' +
-      '<label class="field-label">Kaartcode / nummer</label>' +
-      '<input id="card-code-input" class="text-input" value="' + esc(card.code || '') + '" autocomplete="off" />' +
-      '<span class="field-label">Type code</span>' +
-      '<div class="code-type-toggle" id="card-type-toggle">' +
-        '<button type="button" data-type="barcode" class="' + (card.codeType !== 'qr' ? 'active' : '') + '">Streepjescode</button>' +
-        '<button type="button" data-type="qr" class="' + (card.codeType === 'qr' ? 'active' : '') + '">QR-code</button>' +
-      '</div>' +
-      '<div id="card-code-preview" class="code-box"></div>' +
-      '<span class="field-label">Logo (optioneel)</span>' +
-      '<div id="card-logo-wrap"></div>' +
-      '<input id="card-logo-input" type="file" accept="image/*" class="hidden-input" />' +
-      '<span class="field-label">Kleur van de knop</span>' +
-      '<div class="color-row">' +
-        '<input id="card-color-input" type="color" value="' + card.color + '" class="color-input" />' +
-        '<div id="card-color-preview" class="color-preview" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">' + esc(card.name) + '</div>' +
-      '</div>' +
-      (state.members.length ? (
-        '<span class="field-label">Toegevoegd door</span>' +
-        '<div class="member-pill-row" id="card-member-row">' + memberPills + '</div>'
-      ) : '') +
-      '<button class="btn-primary full" id="save-card-btn" type="button">Wijzigingen opslaan</button>' +
-    '</div>';
-  return sheetWrap('Kaart bewerken', body, true);
-}
-
-function wireEditCardSheet(card) {
-  let selectedType = card.codeType === 'qr' ? 'qr' : 'barcode';
-  let logoData = card.logo || null;
-  let selectedMemberId = card.memberId || null;
-
-  const nameInput = document.getElementById('card-name-input');
-  const codeInput = document.getElementById('card-code-input');
-  const typeToggle = document.getElementById('card-type-toggle');
-  const preview = document.getElementById('card-code-preview');
-  const logoWrap = document.getElementById('card-logo-wrap');
-  const logoInput = document.getElementById('card-logo-input');
-  const colorInput = document.getElementById('card-color-input');
-  const colorPreview = document.getElementById('card-color-preview');
-  const memberRow = document.getElementById('card-member-row');
-  const saveBtn = document.getElementById('save-card-btn');
-
-  nameInput.addEventListener('input', () => { colorPreview.textContent = nameInput.value.trim() || 'Voorbeeld'; });
-
-  function updatePreview() {
-    renderCode(preview, codeInput.value.trim(), selectedType, 180);
-  }
-  updatePreview();
-  codeInput.addEventListener('input', updatePreview);
-
-  typeToggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-type]');
-    if (!btn) return;
-    selectedType = btn.dataset.type;
-    typeToggle.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
-    updatePreview();
-  });
-
-  function renderLogoWrap() {
-    logoWrap.innerHTML = '';
-    if (!logoData) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn-secondary full';
-      btn.innerHTML = icon('upload', 18) + ' Kies logo';
-      btn.addEventListener('click', () => logoInput.click());
-      logoWrap.appendChild(btn);
-      return;
-    }
-    const row = document.createElement('div');
-    row.className = 'logo-preview-row';
-    const img = document.createElement('img');
-    img.src = logoData;
-    img.className = 'logo-thumb';
-    row.appendChild(img);
-    const otherBtn = document.createElement('button');
-    otherBtn.type = 'button';
-    otherBtn.className = 'btn-secondary';
-    otherBtn.textContent = 'Andere kiezen';
-    otherBtn.addEventListener('click', () => logoInput.click());
-    row.appendChild(otherBtn);
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'icon-btn muted';
-    removeBtn.innerHTML = icon('x', 16);
-    removeBtn.addEventListener('click', () => { logoData = null; renderLogoWrap(); });
-    row.appendChild(removeBtn);
-    logoWrap.appendChild(row);
-  }
-  renderLogoWrap();
-
-  logoInput.addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const maxDim = 160;
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        logoData = canvas.toDataURL('image/png');
-        renderLogoWrap();
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  colorInput.addEventListener('input', () => {
-    colorPreview.style.background = colorInput.value;
-    colorPreview.style.color = textColorFor(colorInput.value);
-  });
-
-  if (memberRow) {
-    memberRow.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-id]');
-      if (!btn) return;
-      selectedMemberId = btn.dataset.id;
-      memberRow.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
-    });
-  }
-
-  saveBtn.addEventListener('click', async () => {
-    const name = nameInput.value.trim();
-    const code = codeInput.value.trim();
-    if (!name) { nameInput.focus(); return; }
-    if (!code) { codeInput.focus(); return; }
-    saveBtn.disabled = true;
-    await updateCard(card.id, { name, color: colorInput.value, code, codeType: selectedType, logo: logoData, memberId: selectedMemberId });
-  });
-}
-
 function addCardSheetHTML() {
   const body =
     '<div class="stack">' +
       '<label class="field-label">Naam winkel</label>' +
       '<input id="card-name-input" class="text-input" placeholder="Bijv. Delhaize" autocomplete="off" />' +
-      '<label class="field-label">Kaartcode / nummer</label>' +
-      '<input id="card-code-input" class="text-input" placeholder="Bijv. 5412345678901" autocomplete="off" />' +
-      '<span class="field-label">Type code</span>' +
-      '<div class="code-type-toggle" id="card-type-toggle">' +
-        '<button type="button" class="active" data-type="barcode">Streepjescode</button>' +
-        '<button type="button" data-type="qr">QR-code</button>' +
+      '<span class="field-label">Foto van de kaart</span>' +
+      '<div id="card-photo-wrap">' +
+        '<button class="btn-secondary full" id="choose-photo-btn" type="button">' + icon('upload', 18) + ' Kies foto</button>' +
       '</div>' +
-      '<div id="card-code-preview" class="code-box">Vul een code in om een voorbeeld te zien</div>' +
-      '<span class="field-label">Logo (optioneel)</span>' +
-      '<div id="card-logo-wrap">' +
-        '<button class="btn-secondary full" id="choose-logo-btn" type="button">' + icon('upload', 18) + ' Kies logo</button>' +
-      '</div>' +
-      '<input id="card-logo-input" type="file" accept="image/*" class="hidden-input" />' +
+      '<input id="card-file-input" type="file" accept="image/*" class="hidden-input" />' +
       '<span class="field-label">Kleur van de knop</span>' +
       '<div class="color-row">' +
         '<input id="card-color-input" type="color" value="#3F6B4F" class="color-input" />' +
@@ -946,54 +463,18 @@ function addCardSheetHTML() {
   return sheetWrap('Nieuwe klantenkaart', body, true);
 }
 
-function barcodeFormatFor(code) {
-  if (/^\d+$/.test(code)) {
-    if (code.length === 13) return 'EAN13';
-    if (code.length === 12) return 'UPC';
-    if (code.length === 8) return 'EAN8';
-  }
-  return 'CODE128';
-}
-
-function renderCode(container, code, type, size) {
-  container.innerHTML = '';
-  if (!code) {
-    container.textContent = 'Vul een code in om een voorbeeld te zien';
-    return;
-  }
-  if (type === 'qr') {
-    try {
-      new QRCode(container, { text: code, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
-    } catch (e) {
-      container.textContent = 'Kan geen QR-code maken van deze tekst.';
-    }
-  } else {
-    const canvas = document.createElement('canvas');
-    container.appendChild(canvas);
-    const opts = { displayValue: true, width: 3, height: Math.round(size * 0.5), margin: 8 };
-    try {
-      JsBarcode(canvas, code, Object.assign({ format: barcodeFormatFor(code) }, opts));
-    } catch (e) {
-      try {
-        JsBarcode(canvas, code, Object.assign({ format: 'CODE128' }, opts));
-      } catch (e2) {
-        container.textContent = 'Deze code kan niet als streepjescode getoond worden.';
-      }
-    }
-  }
-}
-
 function cardDetailSheetHTML(sheet) {
   const card = sheet.card;
-  const logoHTML = card.logo ? '<img src="' + card.logo + '" alt="" class="card-detail-logo" />' : '';
   const body =
     '<div class="card-detail">' +
-      '<div id="card-detail-code" class="code-box code-box-detail"></div>' +
-      logoHTML +
-      '<button class="btn-secondary full" data-action="edit-card" data-id="' + card.id + '">' + icon('pencil', 17) + ' Kaart bewerken</button>' +
+      (sheet.image
+        ? '<img src="' + sheet.image + '" alt="' + esc(card.name) + '" class="card-detail-img"/>'
+        : (sheet.imageLoading
+            ? '<div class="card-detail-placeholder" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">…</div>'
+            : '<div class="card-detail-placeholder" style="background:' + card.color + ';color:' + textColorFor(card.color) + '">' + esc(card.name) + '</div>')) +
       '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
     '</div>';
-  return sheetWrap(card.name, body, true, 'top');
+  return sheetWrap(card.name, body, true);
 }
 
 function renderSheetRoot() {
@@ -1014,13 +495,8 @@ function renderSheetRoot() {
   } else if (state.sheet.type === 'addCard') {
     root.innerHTML = addCardSheetHTML();
     wireAddCardSheet();
-  } else if (state.sheet.type === 'editCard') {
-    root.innerHTML = editCardSheetHTML(state.sheet.card);
-    wireEditCardSheet(state.sheet.card);
   } else if (state.sheet.type === 'cardDetail') {
     root.innerHTML = cardDetailSheetHTML(state.sheet);
-    const container = document.getElementById('card-detail-code');
-    if (container) renderCode(container, state.sheet.card.code, state.sheet.card.codeType, 220);
   }
 }
 
@@ -1035,87 +511,67 @@ function triggerSaveMember() {
 }
 
 function wireAddCardSheet() {
-  let selectedType = 'barcode';
-  let logoData = null;
+  let addCardImageData = null;
+  let addCardColor = '#3F6B4F';
 
   const nameInput = document.getElementById('card-name-input');
-  const codeInput = document.getElementById('card-code-input');
-  const typeToggle = document.getElementById('card-type-toggle');
-  const preview = document.getElementById('card-code-preview');
-  const logoWrap = document.getElementById('card-logo-wrap');
-  const logoInput = document.getElementById('card-logo-input');
+  const fileInput = document.getElementById('card-file-input');
+  const chooseBtn = document.getElementById('choose-photo-btn');
   const colorInput = document.getElementById('card-color-input');
   const colorPreview = document.getElementById('card-color-preview');
   const saveBtn = document.getElementById('save-card-btn');
+  const photoWrap = document.getElementById('card-photo-wrap');
 
   nameInput.focus();
   nameInput.addEventListener('input', () => { colorPreview.textContent = nameInput.value.trim() || 'Voorbeeld'; });
-  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); codeInput.focus(); } });
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
 
-  function updatePreview() {
-    renderCode(preview, codeInput.value.trim(), selectedType, 180);
-  }
-  codeInput.addEventListener('input', updatePreview);
-  codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
+  chooseBtn.addEventListener('click', () => fileInput.click());
 
-  typeToggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-type]');
-    if (!btn) return;
-    selectedType = btn.dataset.type;
-    typeToggle.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
-    updatePreview();
-  });
-
-  function renderLogoWrap() {
-    logoWrap.innerHTML = '';
-    if (!logoData) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn-secondary full';
-      btn.innerHTML = icon('upload', 18) + ' Kies logo';
-      btn.addEventListener('click', () => logoInput.click());
-      logoWrap.appendChild(btn);
-      return;
-    }
-    const row = document.createElement('div');
-    row.className = 'logo-preview-row';
-    const img = document.createElement('img');
-    img.src = logoData;
-    img.className = 'logo-thumb';
-    row.appendChild(img);
-    const otherBtn = document.createElement('button');
-    otherBtn.type = 'button';
-    otherBtn.className = 'btn-secondary';
-    otherBtn.textContent = 'Andere kiezen';
-    otherBtn.addEventListener('click', () => logoInput.click());
-    row.appendChild(otherBtn);
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'icon-btn muted';
-    removeBtn.innerHTML = icon('x', 16);
-    removeBtn.addEventListener('click', () => { logoData = null; renderLogoWrap(); });
-    row.appendChild(removeBtn);
-    logoWrap.appendChild(row);
-  }
-  renderLogoWrap();
-
-  logoInput.addEventListener('change', (e) => {
+  fileInput.addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const maxDim = 160;
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const maxW = 480;
+        const scale = Math.min(1, maxW / img.width);
         const w = Math.round(img.width * scale);
         const h = Math.round(img.height * scale);
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
+        canvas.className = 'pick-canvas picking';
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        logoData = canvas.toDataURL('image/png');
-        renderLogoWrap();
+        addCardImageData = canvas.toDataURL('image/jpeg', 0.85);
+
+        photoWrap.innerHTML = '';
+        photoWrap.appendChild(canvas);
+        const hint = document.createElement('p');
+        hint.className = 'hint';
+        hint.innerHTML = icon('pipette', 14) + ' Tik op de foto om de kleur van de knop te kiezen';
+        photoWrap.appendChild(hint);
+        const otherBtn = document.createElement('button');
+        otherBtn.type = 'button';
+        otherBtn.className = 'btn-secondary full';
+        otherBtn.textContent = 'Andere foto kiezen';
+        otherBtn.addEventListener('click', () => fileInput.click());
+        photoWrap.appendChild(otherBtn);
+
+        canvas.addEventListener('click', (ev) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const x = Math.floor((ev.clientX - rect.left) * scaleX);
+          const y = Math.floor((ev.clientY - rect.top) * scaleY);
+          const d = ctx.getImageData(x, y, 1, 1).data;
+          const hex = '#' + [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+          addCardColor = hex;
+          colorInput.value = hex;
+          colorPreview.style.background = hex;
+          colorPreview.style.color = textColorFor(hex);
+        });
       };
       img.src = reader.result;
     };
@@ -1123,17 +579,16 @@ function wireAddCardSheet() {
   });
 
   colorInput.addEventListener('input', () => {
-    colorPreview.style.background = colorInput.value;
-    colorPreview.style.color = textColorFor(colorInput.value);
+    addCardColor = colorInput.value;
+    colorPreview.style.background = addCardColor;
+    colorPreview.style.color = textColorFor(addCardColor);
   });
 
   saveBtn.addEventListener('click', async () => {
     const name = nameInput.value.trim();
-    const code = codeInput.value.trim();
     if (!name) { nameInput.focus(); return; }
-    if (!code) { codeInput.focus(); return; }
     saveBtn.disabled = true;
-    await saveNewCard({ name, color: colorInput.value, code, codeType: selectedType, logo: logoData });
+    await saveNewCard({ name, color: addCardColor, image: addCardImageData });
   });
 }
 
@@ -1194,75 +649,19 @@ async function purgeLogItem(id) {
   await deleteDoc(doc(db, 'shoppingLog', id));
 }
 
-async function addPurchaseItem({ name, amount, weight }) {
-  const cm = currentMember();
-  if (!cm) return;
+async function saveNewCard({ name, color, image }) {
   const id = uid();
-  await setDoc(doc(db, 'purchaseItems', id), { name, amount, weight, memberId: cm.id, createdAt: Date.now() });
-}
-
-async function deletePurchaseItem(id) {
-  await deleteDoc(doc(db, 'purchaseItems', id));
-}
-
-async function buyPurchaseItem(id) {
-  const item = state.purchaseItems.find((i) => i.id === id);
-  if (!item) return;
-  const cm = currentMember();
-  await deleteDoc(doc(db, 'purchaseItems', id));
-  await setDoc(doc(db, 'purchaseLog', id), {
-    name: item.name, amount: item.amount, weight: item.weight, memberId: item.memberId,
-    createdAt: item.createdAt, boughtBy: cm ? cm.id : null, boughtAt: Date.now(),
-  });
-}
-
-async function restorePurchaseLogItem(id) {
-  const logItem = state.purchaseLog.find((i) => i.id === id);
-  if (!logItem) return;
-  await deleteDoc(doc(db, 'purchaseLog', id));
-  await setDoc(doc(db, 'purchaseItems', id), {
-    name: logItem.name, amount: logItem.amount, weight: logItem.weight,
-    memberId: logItem.memberId, createdAt: logItem.createdAt,
-  });
-}
-
-async function purgePurchaseLogItem(id) {
-  await deleteDoc(doc(db, 'purchaseLog', id));
-}
-
-async function addWishlistItem({ name, store, price, image, memberId }) {
-  const id = uid();
-  const data = { name, store, price, memberId, createdAt: Date.now() };
-  if (image) data.image = image;
-  await setDoc(doc(db, 'wishlistItems', id), data);
-}
-
-async function deleteWishlistItem(id) {
-  await deleteDoc(doc(db, 'wishlistItems', id));
-}
-
-async function saveNewCard({ name, color, code, codeType, logo }) {
-  const id = uid();
-  const cm = currentMember();
   state.sheet = null;
   renderSheetRoot();
-  const data = { name, color, code, codeType, memberId: cm ? cm.id : null };
-  if (logo) data.logo = logo;
-  await setDoc(doc(db, 'loyaltyCards', id), data);
+  await setDoc(doc(db, 'loyaltyCards', id), { name, color });
+  if (image) { await setDoc(doc(db, 'cardImages', id), { image }); }
 }
 
 async function deleteCard(id) {
   state.sheet = null;
   renderSheetRoot();
   await deleteDoc(doc(db, 'loyaltyCards', id));
-}
-
-async function updateCard(id, { name, color, code, codeType, logo, memberId }) {
-  state.sheet = null;
-  renderSheetRoot();
-  const data = { name, color, code, codeType, memberId: memberId || null };
-  if (logo) data.logo = logo;
-  await setDoc(doc(db, 'loyaltyCards', id), data);
+  try { await deleteDoc(doc(db, 'cardImages', id)); } catch (e) { /* ignore */ }
 }
 
 document.body.addEventListener('submit', async (e) => {
@@ -1276,17 +675,6 @@ document.body.addEventListener('submit', async (e) => {
     form.reset();
     form.elements['name'].focus();
     await addItem({ name, amount, weight });
-  }
-  if (e.target.matches && e.target.matches('[data-action="submit-add-purchase"]')) {
-    e.preventDefault();
-    const form = e.target;
-    const name = form.elements['name'].value.trim();
-    if (!name) return;
-    const amount = form.elements['amount'].value.trim();
-    const weight = form.elements['weight'].value.trim();
-    form.reset();
-    form.elements['name'].focus();
-    await addPurchaseItem({ name, amount, weight });
   }
 });
 
@@ -1347,37 +735,6 @@ document.body.addEventListener('click', async (e) => {
     case 'purge-log':
       await purgeLogItem(id);
       break;
-    case 'set-purchasesub':
-      state.purchaseSub = value;
-      renderSegmented();
-      renderView();
-      break;
-    case 'buy-purchase':
-      await buyPurchaseItem(id);
-      break;
-    case 'delete-purchase':
-      await deletePurchaseItem(id);
-      break;
-    case 'restore-purchase-log':
-      await restorePurchaseLogItem(id);
-      break;
-    case 'purge-purchase-log':
-      await purgePurchaseLogItem(id);
-      break;
-    case 'open-wishlist':
-      state.wishlistMemberId = id;
-      renderView();
-      break;
-    case 'back-to-wishlist-members':
-      state.wishlistMemberId = null;
-      renderView();
-      break;
-    case 'delete-wishlist-item':
-      await deleteWishlistItem(id);
-      break;
-    case 'share-wishlist-pdf':
-      generateWishlistPDF(id);
-      break;
     case 'open-add-card':
       state.sheet = { type: 'addCard', closable: true };
       renderSheetRoot();
@@ -1385,15 +742,18 @@ document.body.addEventListener('click', async (e) => {
     case 'open-card': {
       const card = state.cards.find((c) => c.id === id);
       if (!card) return;
-      state.sheet = { type: 'cardDetail', card, closable: true };
+      state.sheet = { type: 'cardDetail', card, image: null, imageLoading: true, closable: true };
       renderSheetRoot();
-      break;
-    }
-    case 'edit-card': {
-      const card = state.cards.find((c) => c.id === id);
-      if (!card) return;
-      state.sheet = { type: 'editCard', card, closable: true };
-      renderSheetRoot();
+      let img = null;
+      try {
+        const snap = await getDoc(doc(db, 'cardImages', id));
+        img = snap.exists() ? snap.data().image : null;
+      } catch (err) { img = null; }
+      if (state.sheet && state.sheet.type === 'cardDetail' && state.sheet.card.id === id) {
+        state.sheet.image = img;
+        state.sheet.imageLoading = false;
+        renderSheetRoot();
+      }
       break;
     }
     case 'delete-card':
@@ -1402,7 +762,7 @@ document.body.addEventListener('click', async (e) => {
   }
 });
 
-const ready = { members: false, items: false, log: false, cards: false, purchaseItems: false, purchaseLog: false, wishlistItems: false };
+const ready = { members: false, items: false, log: false, cards: false };
 function checkReady() {
   if (Object.values(ready).every(Boolean)) {
     document.getElementById('loading-view').style.display = 'none';
@@ -1440,29 +800,6 @@ function startListeners() {
     if (state.tab === 'list' && state.listSub === 'log') renderView();
   }, (err) => showFatalError(err));
 
-  onSnapshot(collection(db, 'purchaseItems'), (snap) => {
-    state.purchaseItems = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
-    ready.purchaseItems = true;
-    checkReady();
-    renderSegmented();
-    if (state.tab === 'purchases' && state.purchaseSub === 'active') renderView();
-  }, (err) => showFatalError(err));
-
-  onSnapshot(collection(db, 'purchaseLog'), (snap) => {
-    state.purchaseLog = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.boughtAt - a.boughtAt);
-    ready.purchaseLog = true;
-    checkReady();
-    renderSegmented();
-    if (state.tab === 'purchases' && state.purchaseSub === 'log') renderView();
-  }, (err) => showFatalError(err));
-
-  onSnapshot(collection(db, 'wishlistItems'), (snap) => {
-    state.wishlistItems = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
-    ready.wishlistItems = true;
-    checkReady();
-    if (state.tab === 'wishlist') renderView();
-  }, (err) => showFatalError(err));
-
   onSnapshot(collection(db, 'loyaltyCards'), (snap) => {
     state.cards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     ready.cards = true;
@@ -1486,4 +823,3 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
-
