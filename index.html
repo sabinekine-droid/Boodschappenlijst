@@ -569,10 +569,8 @@ function wishlistViewHTML() {
           '<input class="text-input small" name="link" placeholder="Link (optioneel)" autocomplete="off" />' +
         '</div>' +
         '<label class="field-label">Foto (optioneel)</label>' +
-        '<div class="row-gap">' +
-          '<input class="text-input" name="photo" placeholder="URL van foto" autocomplete="off" />' +
-          '<button class="btn-secondary" type="button" id="wishlist-photo-upload">' + icon('upload', 16) + '</button>' +
-        '</div>' +
+        '<div id="wishlist-photo-preview"></div>' +
+        '<button class="btn-secondary full" type="button" id="wishlist-photo-upload">' + icon('upload', 16) + ' Foto kiezen</button>' +
         '<input id="wishlist-photo-input" type="file" accept="image/*" class="hidden-input" />' +
       '</form>' +
       itemsHTML +
@@ -584,20 +582,33 @@ function wishlistViewHTML() {
   setTimeout(() => {
     const uploadBtn = document.getElementById('wishlist-photo-upload');
     const photoInput = document.getElementById('wishlist-photo-input');
-    const photoField = document.querySelector('input[name="photo"]');
-    if (uploadBtn && photoInput && photoField) {
+    const preview = document.getElementById('wishlist-photo-preview');
+    const form = document.querySelector('form[data-action="submit-wishlist-item"]');
+    if (uploadBtn && photoInput && form) {
       uploadBtn.addEventListener('click', (e) => {
         e.preventDefault();
         photoInput.click();
       });
-      photoInput.addEventListener('change', async (e) => {
+      photoInput.addEventListener('change', (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-          photoField.value = reader.result;
-          const form = photoField.closest('form');
-          if (form) form.dataset.photoData = reader.result;
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 500;
+            const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+            const w = Math.round(img.width * scale);
+            const h = Math.round(img.height * scale);
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const photoData = canvas.toDataURL('image/jpeg', 0.85);
+            form.dataset.photoData = photoData;
+            if (preview) preview.innerHTML = '<img src="' + photoData + '" alt="" style="width:100%;border-radius:12px;margin:8px 0;" />';
+          };
+          img.src = reader.result;
         };
         reader.readAsDataURL(file);
       });
@@ -970,8 +981,10 @@ function editWishlistItemSheetHTML(item) {
       '<input id="wish-price-input" class="text-input" value="' + esc(item.price || '') + '" autocomplete="off" />' +
       '<label class="field-label">Link</label>' +
       '<input id="wish-link-input" class="text-input" value="' + esc(item.link || '') + '" placeholder="https://..." autocomplete="off" />' +
-      '<label class="field-label">Foto URL</label>' +
-      '<input id="wish-photo-input" class="text-input" value="' + esc(item.photo || '') + '" placeholder="https://..." autocomplete="off" />' +
+      '<label class="field-label">Foto</label>' +
+      '<div id="wish-photo-preview">' + (item.photo ? '<img src="' + esc(item.photo) + '" alt="" style="width:100%;border-radius:12px;margin-bottom:8px;" />' : '') + '</div>' +
+      '<button class="btn-secondary full" type="button" id="wish-photo-upload-btn">' + icon('upload', 16) + (item.photo ? ' Andere foto kiezen' : ' Foto kiezen') + '</button>' +
+      '<input id="wish-photo-file" type="file" accept="image/*" class="hidden-input" />' +
       '<button class="btn-primary full" id="save-wish-btn" type="button">Opslaan</button>' +
     '</div>';
   return sheetWrap('Item bewerken', body, true);
@@ -979,6 +992,37 @@ function editWishlistItemSheetHTML(item) {
 
 function wireEditWishlistItemSheet(item) {
   const saveBtn = document.getElementById('save-wish-btn');
+  const uploadBtn = document.getElementById('wish-photo-upload-btn');
+  const fileInput = document.getElementById('wish-photo-file');
+  const preview = document.getElementById('wish-photo-preview');
+  let photoData = item.photo || '';
+
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 500;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        photoData = canvas.toDataURL('image/jpeg', 0.85);
+        preview.innerHTML = '<img src="' + photoData + '" alt="" style="width:100%;border-radius:12px;margin-bottom:8px;" />';
+        uploadBtn.textContent = '';
+        uploadBtn.innerHTML = icon('upload', 16) + ' Andere foto kiezen';
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
   saveBtn.addEventListener('click', async () => {
     const name = document.getElementById('wish-name-input').value.trim();
     if (!name) return;
@@ -986,8 +1030,7 @@ function wireEditWishlistItemSheet(item) {
     const store = document.getElementById('wish-store-input').value.trim();
     const price = document.getElementById('wish-price-input').value.trim();
     const link = document.getElementById('wish-link-input').value.trim();
-    const photo = document.getElementById('wish-photo-input').value.trim();
-    await updateWishlistItem(item.id, { name, store, price, link, photo });
+    await updateWishlistItem(item.id, { name, store, price, link, photo: photoData });
     state.sheet = null;
     renderSheetRoot();
   });
@@ -1365,6 +1408,9 @@ document.body.addEventListener('submit', async (e) => {
     const link = form.elements['link'].value.trim();
     const photo = form.dataset.photoData || '';
     form.reset();
+    delete form.dataset.photoData;
+    const preview = document.getElementById('wishlist-photo-preview');
+    if (preview) preview.innerHTML = '';
     form.elements['name'].focus();
     await addWishlistItem({ name, store, price, link, photo, memberId: state.wishlistMemberId });
   }
