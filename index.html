@@ -247,6 +247,16 @@
     color: var(--ink-muted); cursor: pointer;
   }
   .member-pill.active { background: var(--pill-color, var(--primary)); border-color: transparent; color: #fff; }
+
+  .error-toast {
+    position: fixed; left: 12px; right: 12px; bottom: 84px; z-index: 999;
+    max-width: 456px; margin: 0 auto; background: #FBEAE6; border: 1.5px solid var(--danger);
+    color: var(--danger); border-radius: 12px; padding: 12px 14px; font-size: 13px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18); display: flex; gap: 10px; align-items: flex-start;
+  }
+  .error-toast strong { display: block; font-family: 'Fredoka', sans-serif; font-size: 13.5px; margin-bottom: 2px; }
+  .error-toast pre { white-space: pre-wrap; word-break: break-word; margin: 4px 0 0; font-size: 11.5px; opacity: 0.9; font-family: monospace; }
+  .error-toast button { background: none; border: none; color: var(--danger); cursor: pointer; flex-shrink: 0; padding: 2px; }
 </style>
 </head>
 <body>
@@ -259,6 +269,7 @@
     <div id="nav-root"></div>
   </div>
   <div id="sheet-root"></div>
+  <div id="error-root"></div>
 </div>
 
 <script type="module">
@@ -292,6 +303,33 @@ try {
   console.error("Firebase kon niet starten:", e);
   firebaseError = e;
 }
+
+/* ---------- Zichtbare foutmeldingen (i.p.v. stil falen) ---------- */
+function showError(context, err) {
+  console.error(context, err);
+  const root = document.getElementById('error-root');
+  const msg = (err && (err.message || err.toString())) || String(err);
+  root.innerHTML =
+    '<div class="error-toast">' +
+      '<div style="flex:1">' +
+        '<strong>Er ging iets mis (' + esc(context) + ')</strong>' +
+        '<pre>' + esc(msg) + '</pre>' +
+      '</div>' +
+      '<button data-action="dismiss-error">' + icon('x', 16) + '</button>' +
+    '</div>';
+}
+function clearError() {
+  document.getElementById('error-root').innerHTML = '';
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest && e.target.closest('[data-action="dismiss-error"]')) clearError();
+});
+window.addEventListener('unhandledrejection', (e) => {
+  showError('onverwachte fout', e.reason);
+});
+window.addEventListener('error', (e) => {
+  showError('scriptfout', e.error || e.message);
+});
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 function initials(name) { return (name || '?').trim().slice(0, 1).toUpperCase(); }
@@ -616,57 +654,67 @@ function wireWishlistView() {
     const name = nameInput.value.trim();
     if (!name) { nameInput.focus(); return; }
     saveBtn.disabled = true;
-    await addWishlistItem({
-      name,
-      store: storeInput.value.trim(),
-      price: priceInput.value.trim(),
-      image: photoData,
-      memberId: state.wishlistMemberId,
-    });
+    try {
+      await addWishlistItem({
+        name,
+        store: storeInput.value.trim(),
+        price: priceInput.value.trim(),
+        image: photoData,
+        memberId: state.wishlistMemberId,
+      });
+    } catch (err) {
+      showError('wens toevoegen', err);
+    } finally {
+      saveBtn.disabled = false;
+    }
   });
 }
 
 function generateWishlistPDF(memberId) {
-  if (!window.jspdf) { alert('PDF-bibliotheek kon niet laden. Controleer je internetverbinding.'); return; }
-  const member = memberById(memberId);
-  const items = state.wishlistItems.filter((i) => i.memberId === memberId);
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-  let y = 56;
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(20);
-  pdf.text('Wensenlijst - ' + (member ? member.name : ''), 40, y);
-  y += 26;
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(11);
-  if (items.length === 0) {
-    pdf.text('Nog geen items op deze wensenlijst.', 40, y);
-  }
-  items.forEach((item) => {
-    if (y > 740) { pdf.addPage(); y = 56; }
-    let imgH = 0;
-    if (item.image) {
-      try {
-        const props = pdf.getImageProperties(item.image);
-        const imgW = 64;
-        imgH = (props.height / props.width) * imgW;
-        const fmt = item.image.indexOf('image/png') !== -1 ? 'PNG' : 'JPEG';
-        pdf.addImage(item.image, fmt, 40, y, imgW, imgH);
-      } catch (e) { /* skip broken image */ }
-    }
-    const textX = item.image ? 116 : 40;
+  if (!window.jspdf) { showError('PDF maken', new Error('PDF-bibliotheek kon niet laden. Controleer je internetverbinding.')); return; }
+  try {
+    const member = memberById(memberId);
+    const items = state.wishlistItems.filter((i) => i.memberId === memberId);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+    let y = 56;
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.text(item.name, textX, y + 16);
+    pdf.setFontSize(20);
+    pdf.text('Wensenlijst - ' + (member ? member.name : ''), 40, y);
+    y += 26;
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10.5);
-    const metaParts = [];
-    if (item.store) metaParts.push('Winkel: ' + item.store);
-    if (item.price) metaParts.push('Bedrag: € ' + item.price);
-    if (metaParts.length) pdf.text(metaParts.join('   ·   '), textX, y + 32);
-    y += Math.max(imgH, 46) + 14;
-  });
-  pdf.save('Wensenlijst-' + (member ? member.name.replace(/[^a-z0-9]+/gi, '-') : 'lijst') + '.pdf');
+    pdf.setFontSize(11);
+    if (items.length === 0) {
+      pdf.text('Nog geen items op deze wensenlijst.', 40, y);
+    }
+    items.forEach((item) => {
+      if (y > 740) { pdf.addPage(); y = 56; }
+      let imgH = 0;
+      if (item.image) {
+        try {
+          const props = pdf.getImageProperties(item.image);
+          const imgW = 64;
+          imgH = (props.height / props.width) * imgW;
+          const fmt = item.image.indexOf('image/png') !== -1 ? 'PNG' : 'JPEG';
+          pdf.addImage(item.image, fmt, 40, y, imgW, imgH);
+        } catch (e) { /* skip broken image */ }
+      }
+      const textX = item.image ? 116 : 40;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text(item.name, textX, y + 16);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10.5);
+      const metaParts = [];
+      if (item.store) metaParts.push('Winkel: ' + item.store);
+      if (item.price) metaParts.push('Bedrag: € ' + item.price);
+      if (metaParts.length) pdf.text(metaParts.join('   ·   '), textX, y + 32);
+      y += Math.max(imgH, 46) + 14;
+    });
+    pdf.save('Wensenlijst-' + (member ? member.name.replace(/[^a-z0-9]+/gi, '-') : 'lijst') + '.pdf');
+  } catch (err) {
+    showError('PDF maken', err);
+  }
 }
 
 function cardButtonHTML(card) {
@@ -914,7 +962,12 @@ function wireEditCardSheet(card) {
     if (!name) { nameInput.focus(); return; }
     if (!code) { codeInput.focus(); return; }
     saveBtn.disabled = true;
-    await updateCard(card.id, { name, color: colorInput.value, code, codeType: selectedType, logo: logoData, memberId: selectedMemberId });
+    try {
+      await updateCard(card.id, { name, color: colorInput.value, code, codeType: selectedType, logo: logoData, memberId: selectedMemberId });
+    } catch (err) {
+      saveBtn.disabled = false;
+      showError('kaart bijwerken', err);
+    }
   });
 }
 
@@ -1031,7 +1084,7 @@ function triggerSaveMember() {
   const usedColors = new Set(state.members.map((m) => m.color));
   const suggestion = MEMBER_COLORS.find((c) => !usedColors.has(c)) || MEMBER_COLORS[0];
   const color = (state.sheet && state.sheet.color) || suggestion;
-  createMember(name, color);
+  createMember(name, color).catch((err) => showError('gezinslid opslaan', err));
 }
 
 function wireAddCardSheet() {
@@ -1133,7 +1186,12 @@ function wireAddCardSheet() {
     if (!name) { nameInput.focus(); return; }
     if (!code) { codeInput.focus(); return; }
     saveBtn.disabled = true;
-    await saveNewCard({ name, color: colorInput.value, code, codeType: selectedType, logo: logoData });
+    try {
+      await saveNewCard({ name, color: colorInput.value, code, codeType: selectedType, logo: logoData });
+    } catch (err) {
+      saveBtn.disabled = false;
+      showError('kaart opslaan', err);
+    }
   });
 }
 
@@ -1244,25 +1302,25 @@ async function deleteWishlistItem(id) {
 async function saveNewCard({ name, color, code, codeType, logo }) {
   const id = uid();
   const cm = currentMember();
-  state.sheet = null;
-  renderSheetRoot();
   const data = { name, color, code, codeType, memberId: cm ? cm.id : null };
   if (logo) data.logo = logo;
   await setDoc(doc(db, 'loyaltyCards', id), data);
+  state.sheet = null;
+  renderSheetRoot();
 }
 
 async function deleteCard(id) {
+  await deleteDoc(doc(db, 'loyaltyCards', id));
   state.sheet = null;
   renderSheetRoot();
-  await deleteDoc(doc(db, 'loyaltyCards', id));
 }
 
 async function updateCard(id, { name, color, code, codeType, logo, memberId }) {
-  state.sheet = null;
-  renderSheetRoot();
   const data = { name, color, code, codeType, memberId: memberId || null };
   if (logo) data.logo = logo;
   await setDoc(doc(db, 'loyaltyCards', id), data);
+  state.sheet = null;
+  renderSheetRoot();
 }
 
 document.body.addEventListener('submit', async (e) => {
@@ -1273,9 +1331,13 @@ document.body.addEventListener('submit', async (e) => {
     if (!name) return;
     const amount = form.elements['amount'].value.trim();
     const weight = form.elements['weight'].value.trim();
-    form.reset();
-    form.elements['name'].focus();
-    await addItem({ name, amount, weight });
+    try {
+      await addItem({ name, amount, weight });
+      form.reset();
+      form.elements['name'].focus();
+    } catch (err) {
+      showError('item toevoegen', err);
+    }
   }
   if (e.target.matches && e.target.matches('[data-action="submit-add-purchase"]')) {
     e.preventDefault();
@@ -1284,9 +1346,13 @@ document.body.addEventListener('submit', async (e) => {
     if (!name) return;
     const amount = form.elements['amount'].value.trim();
     const weight = form.elements['weight'].value.trim();
-    form.reset();
-    form.elements['name'].focus();
-    await addPurchaseItem({ name, amount, weight });
+    try {
+      await addPurchaseItem({ name, amount, weight });
+      form.reset();
+      form.elements['name'].focus();
+    } catch (err) {
+      showError('aankoop toevoegen', err);
+    }
   }
 });
 
@@ -1297,108 +1363,112 @@ document.body.addEventListener('click', async (e) => {
   const id = el.dataset.id;
   const value = el.dataset.value;
 
-  switch (action) {
-    case 'open-switcher':
-      state.sheet = { type: 'member', creating: false, closable: true };
-      renderSheetRoot();
-      break;
-    case 'close-sheet':
-      if (state.sheet && state.sheet.closable) { state.sheet = null; renderSheetRoot(); }
-      break;
-    case 'pick-member':
-      await pickMember(id);
-      break;
-    case 'start-create-member':
-      state.sheet = { type: 'member', creating: true, closable: state.sheet.closable, name: '', color: null };
-      renderSheetRoot();
-      break;
-    case 'back-to-member-list':
-      state.sheet = { type: 'member', creating: false, closable: state.sheet.closable };
-      renderSheetRoot();
-      break;
-    case 'choose-swatch': {
-      const nameInput = document.getElementById('member-name-input');
-      state.sheet.name = nameInput ? nameInput.value : (state.sheet.name || '');
-      state.sheet.color = value;
-      renderSheetRoot();
-      break;
+  try {
+    switch (action) {
+      case 'open-switcher':
+        state.sheet = { type: 'member', creating: false, closable: true };
+        renderSheetRoot();
+        break;
+      case 'close-sheet':
+        if (state.sheet && state.sheet.closable) { state.sheet = null; renderSheetRoot(); }
+        break;
+      case 'pick-member':
+        await pickMember(id);
+        break;
+      case 'start-create-member':
+        state.sheet = { type: 'member', creating: true, closable: state.sheet.closable, name: '', color: null };
+        renderSheetRoot();
+        break;
+      case 'back-to-member-list':
+        state.sheet = { type: 'member', creating: false, closable: state.sheet.closable };
+        renderSheetRoot();
+        break;
+      case 'choose-swatch': {
+        const nameInput = document.getElementById('member-name-input');
+        state.sheet.name = nameInput ? nameInput.value : (state.sheet.name || '');
+        state.sheet.color = value;
+        renderSheetRoot();
+        break;
+      }
+      case 'save-member':
+        triggerSaveMember();
+        break;
+      case 'set-tab':
+        state.tab = value;
+        renderApp();
+        break;
+      case 'set-listsub':
+        state.listSub = value;
+        renderSegmented();
+        renderView();
+        break;
+      case 'buy-item':
+        await buyItem(id);
+        break;
+      case 'delete-item':
+        await deleteItem(id);
+        break;
+      case 'restore-log':
+        await restoreLogItem(id);
+        break;
+      case 'purge-log':
+        await purgeLogItem(id);
+        break;
+      case 'set-purchasesub':
+        state.purchaseSub = value;
+        renderSegmented();
+        renderView();
+        break;
+      case 'buy-purchase':
+        await buyPurchaseItem(id);
+        break;
+      case 'delete-purchase':
+        await deletePurchaseItem(id);
+        break;
+      case 'restore-purchase-log':
+        await restorePurchaseLogItem(id);
+        break;
+      case 'purge-purchase-log':
+        await purgePurchaseLogItem(id);
+        break;
+      case 'open-wishlist':
+        state.wishlistMemberId = id;
+        renderView();
+        break;
+      case 'back-to-wishlist-members':
+        state.wishlistMemberId = null;
+        renderView();
+        break;
+      case 'delete-wishlist-item':
+        await deleteWishlistItem(id);
+        break;
+      case 'share-wishlist-pdf':
+        generateWishlistPDF(id);
+        break;
+      case 'open-add-card':
+        state.sheet = { type: 'addCard', closable: true };
+        renderSheetRoot();
+        break;
+      case 'open-card': {
+        const card = state.cards.find((c) => c.id === id);
+        if (!card) return;
+        state.sheet = { type: 'cardDetail', card, closable: true };
+        renderSheetRoot();
+        break;
+      }
+      case 'edit-card': {
+        const card = state.cards.find((c) => c.id === id);
+        if (!card) return;
+        state.sheet = { type: 'editCard', card, closable: true };
+        renderSheetRoot();
+        break;
+      }
+      case 'delete-card':
+        await deleteCard(id);
+        break;
     }
-    case 'save-member':
-      triggerSaveMember();
-      break;
-    case 'set-tab':
-      state.tab = value;
-      renderApp();
-      break;
-    case 'set-listsub':
-      state.listSub = value;
-      renderSegmented();
-      renderView();
-      break;
-    case 'buy-item':
-      await buyItem(id);
-      break;
-    case 'delete-item':
-      await deleteItem(id);
-      break;
-    case 'restore-log':
-      await restoreLogItem(id);
-      break;
-    case 'purge-log':
-      await purgeLogItem(id);
-      break;
-    case 'set-purchasesub':
-      state.purchaseSub = value;
-      renderSegmented();
-      renderView();
-      break;
-    case 'buy-purchase':
-      await buyPurchaseItem(id);
-      break;
-    case 'delete-purchase':
-      await deletePurchaseItem(id);
-      break;
-    case 'restore-purchase-log':
-      await restorePurchaseLogItem(id);
-      break;
-    case 'purge-purchase-log':
-      await purgePurchaseLogItem(id);
-      break;
-    case 'open-wishlist':
-      state.wishlistMemberId = id;
-      renderView();
-      break;
-    case 'back-to-wishlist-members':
-      state.wishlistMemberId = null;
-      renderView();
-      break;
-    case 'delete-wishlist-item':
-      await deleteWishlistItem(id);
-      break;
-    case 'share-wishlist-pdf':
-      generateWishlistPDF(id);
-      break;
-    case 'open-add-card':
-      state.sheet = { type: 'addCard', closable: true };
-      renderSheetRoot();
-      break;
-    case 'open-card': {
-      const card = state.cards.find((c) => c.id === id);
-      if (!card) return;
-      state.sheet = { type: 'cardDetail', card, closable: true };
-      renderSheetRoot();
-      break;
-    }
-    case 'edit-card': {
-      const card = state.cards.find((c) => c.id === id);
-      if (!card) return;
-      state.sheet = { type: 'editCard', card, closable: true };
-      renderSheetRoot();
-      break;
-    }
-    case 'delete-card':
-      await deleteCard(id);
-      break;
+  } catch (err) {
+    showError(action, err);
   }
 });
 
@@ -1422,7 +1492,7 @@ function startListeners() {
     checkReady();
     renderTopbar();
     if (state.sheet && state.sheet.type === 'member' && !state.sheet.creating) renderSheetRoot();
-  }, (err) => showFatalError(err));
+  }, (err) => { showFatalError(err); showError('familyMembers luisteraar', err); });
 
   onSnapshot(collection(db, 'shoppingItems'), (snap) => {
     state.items = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
@@ -1430,7 +1500,7 @@ function startListeners() {
     checkReady();
     renderSegmented();
     if (state.tab === 'list' && state.listSub === 'active') renderView();
-  }, (err) => showFatalError(err));
+  }, (err) => { showFatalError(err); showError('shoppingItems luisteraar', err); });
 
   onSnapshot(collection(db, 'shoppingLog'), (snap) => {
     state.log = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.boughtAt - a.boughtAt);
@@ -1438,7 +1508,7 @@ function startListeners() {
     checkReady();
     renderSegmented();
     if (state.tab === 'list' && state.listSub === 'log') renderView();
-  }, (err) => showFatalError(err));
+  }, (err) => { showFatalError(err); showError('shoppingLog luisteraar', err); });
 
   onSnapshot(collection(db, 'purchaseItems'), (snap) => {
     state.purchaseItems = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
@@ -1446,7 +1516,7 @@ function startListeners() {
     checkReady();
     renderSegmented();
     if (state.tab === 'purchases' && state.purchaseSub === 'active') renderView();
-  }, (err) => showFatalError(err));
+  }, (err) => { showFatalError(err); showError('purchaseItems luisteraar', err); });
 
   onSnapshot(collection(db, 'purchaseLog'), (snap) => {
     state.purchaseLog = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.boughtAt - a.boughtAt);
@@ -1454,21 +1524,21 @@ function startListeners() {
     checkReady();
     renderSegmented();
     if (state.tab === 'purchases' && state.purchaseSub === 'log') renderView();
-  }, (err) => showFatalError(err));
+  }, (err) => { showFatalError(err); showError('purchaseLog luisteraar', err); });
 
   onSnapshot(collection(db, 'wishlistItems'), (snap) => {
     state.wishlistItems = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
     ready.wishlistItems = true;
     checkReady();
     if (state.tab === 'wishlist') renderView();
-  }, (err) => showFatalError(err));
+  }, (err) => { showFatalError(err); showError('wishlistItems luisteraar', err); });
 
   onSnapshot(collection(db, 'loyaltyCards'), (snap) => {
     state.cards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     ready.cards = true;
     checkReady();
     if (state.tab === 'cards') renderView();
-  }, (err) => showFatalError(err));
+  }, (err) => { showFatalError(err); showError('loyaltyCards luisteraar', err); });
 }
 
 function showFatalError(err) {
@@ -1486,3 +1556,4 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
+
