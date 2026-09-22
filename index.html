@@ -180,7 +180,8 @@
     font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 14px;
   }
 
-  .card-detail { display: flex; flex-direction: column; gap: 14px; }
+  .card-detail { display: flex; flex-direction: column; gap: 20px; }
+  .card-detail-code-wrap { display: flex; flex-direction: column; gap: 16px; }
   .card-detail-img { width: 100%; border-radius: 14px; display: block; }
   .card-detail-placeholder {
     width: 100%; aspect-ratio: 1.586; border-radius: 14px; display: flex; align-items: center; justify-content: center;
@@ -204,9 +205,17 @@
     image-rendering: pixelated;
     image-rendering: crisp-edges;
   }
-  .code-box-detail { padding: 28px; min-height: 160px; }
+  .code-box-detail { 
+    padding: 32px 24px; 
+    min-height: 200px; 
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
   .card-detail-logo {
-    width: 64px; height: 64px; border-radius: 14px; object-fit: contain; background: #fff;
+    width: 80px; height: 80px; border-radius: 14px; object-fit: contain; background: #fff;
     padding: 6px; align-self: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   }
   .logo-preview-row { display: flex; align-items: center; gap: 10px; }
@@ -220,6 +229,36 @@
     color: var(--ink-muted); cursor: pointer;
   }
   .member-pill.active { background: var(--pill-color, var(--primary)); border-color: transparent; color: #fff; }
+
+  .wishlist-member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  .wishlist-member-btn {
+    position: relative; aspect-ratio: 1; border: none; border-radius: 14px;
+    background: var(--surface); cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 2px 8px rgba(36,53,43,0.1); padding: 0;
+  }
+  .wishlist-member-btn-avatar { width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0; }
+  .wishlist-member-btn span { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 14px; color: var(--ink); }
+  .wishlist-upload-hint { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
+  .wishlist-header-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; }
+  .wishlist-owner-title { flex: 1; font-size: 19px; color: var(--primary-dark); }
+  .wishlist-owner-photo { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+  .wishlist-items { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .wishlist-item-row {
+    background: var(--surface); border-radius: 12px; padding: 12px;
+    display: flex; gap: 12px; align-items: flex-start;
+    box-shadow: 0 1px 4px rgba(36,53,43,0.05);
+  }
+  .wishlist-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+  .wishlist-thumb-empty {
+    width: 48px; height: 48px; border-radius: 10px; background: var(--primary-light);
+    display: flex; align-items: center; justify-content: center; color: var(--primary-dark); flex-shrink: 0;
+  }
+  .wishlist-item-text { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .wishlist-item-name { font-weight: 600; font-size: 15px; }
+  .wishlist-item-meta { font-size: 12.5px; color: var(--ink-muted); }
+  .wishlist-item-actions { display: flex; gap: 6px; }
+
 </style>
 </head>
 <body>
@@ -299,6 +338,8 @@ function icon(name, size) {
     trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>',
     rotate: '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/>',
     cart: '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.8h8.2a2 2 0 0 0 2-1.6L21 8H6"/>',
+    bag: '<path d="M6 9l1.05-2.1A2 2 0 0 1 9 6h6a2 2 0 0 1 1.95 2.1L18 9M6 9h12v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9m3-3V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>',
+    gift: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>',
     card: '<rect x="2" y="5" width="20" height="14" rx="2.5"/><line x1="2" y1="10" x2="22" y2="10"/>',
     pipette: '<path d="M15 5l4 4"/><path d="M4 20l1-4 9-9 3 3-9 9-4 1z"/>',
     upload: '<path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 20h16"/>',
@@ -310,8 +351,10 @@ function icon(name, size) {
 
 const state = {
   members: [], items: [], log: [], cards: [],
+  purchases: [], purchaseLog: [],
+  wishlistItems: [], wishlistMemberId: null,
   currentMemberId: localStorage.getItem('current-member-id') || null,
-  tab: 'list', listSub: 'active',
+  tab: 'list', listSub: 'active', purchaseSub: 'active',
   sheet: null,
 };
 
@@ -338,18 +381,31 @@ function renderTopbar() {
 
 function renderSegmented() {
   const root = document.getElementById('segmented-root');
-  if (state.tab !== 'list') { root.innerHTML = ''; return; }
-  root.innerHTML =
-    '<div class="segmented">' +
-      '<button class="' + (state.listSub === 'active' ? 'active' : '') + '" data-action="set-listsub" data-value="active">Lijst' + (state.items.length ? ' (' + state.items.length + ')' : '') + '</button>' +
-      '<button class="' + (state.listSub === 'log' ? 'active' : '') + '" data-action="set-listsub" data-value="log">Logboek' + (state.log.length ? ' (' + state.log.length + ')' : '') + '</button>' +
-    '</div>';
+  if (state.tab === 'list') {
+    root.innerHTML =
+      '<div class="segmented">' +
+        '<button class="' + (state.listSub === 'active' ? 'active' : '') + '" data-action="set-listsub" data-value="active">Lijst' + (state.items.length ? ' (' + state.items.length + ')' : '') + '</button>' +
+        '<button class="' + (state.listSub === 'log' ? 'active' : '') + '" data-action="set-listsub" data-value="log">Logboek' + (state.log.length ? ' (' + state.log.length + ')' : '') + '</button>' +
+      '</div>';
+  } else if (state.tab === 'purchases') {
+    root.innerHTML =
+      '<div class="segmented">' +
+        '<button class="' + (state.purchaseSub === 'active' ? 'active' : '') + '" data-action="set-purchasesub" data-value="active">Aankopen' + (state.purchases.length ? ' (' + state.purchases.length + ')' : '') + '</button>' +
+        '<button class="' + (state.purchaseSub === 'log' ? 'active' : '') + '" data-action="set-purchasesub" data-value="log">Logboek' + (state.purchaseLog.length ? ' (' + state.purchaseLog.length + ')' : '') + '</button>' +
+      '</div>';
+  } else {
+    root.innerHTML = '';
+  }
 }
 
 function renderView() {
   const root = document.getElementById('view-root');
   if (state.tab === 'list') {
     root.innerHTML = state.listSub === 'active' ? listViewHTML() : logViewHTML();
+  } else if (state.tab === 'purchases') {
+    root.innerHTML = state.purchaseSub === 'active' ? purchaseViewHTML() : purchaseLogViewHTML();
+  } else if (state.tab === 'wishlist') {
+    root.innerHTML = wishlistViewHTML();
   } else {
     root.innerHTML = cardsViewHTML();
   }
@@ -412,6 +468,169 @@ function logViewHTML() {
   return '<div class="view-pad"><ul class="item-list">' + state.log.map(logRowHTML).join('') + '</ul></div>';
 }
 
+function purchaseRowHTML(item) {
+  const m = memberById(item.memberId);
+  const meta = itemMeta(item);
+  return (
+    '<li class="item-row" style="border-left-color:' + (m ? m.color : 'var(--line)') + '">' +
+      '<button class="check-circle" data-action="buy-purchase" data-id="' + item.id + '">' + icon('check', 16) + '</button>' +
+      '<div class="item-text"><span class="item-name">' + esc(item.name) + '</span>' +
+        (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
+      '</div>' +
+      (m ? avatarHTML(m, 26) : '') +
+      '<button class="icon-btn muted" data-action="delete-purchase" data-id="' + item.id + '">' + icon('x', 16) + '</button>' +
+    '</li>'
+  );
+}
+
+function purchaseViewHTML() {
+  const itemsHTML = state.purchases.length === 0
+    ? emptyStateHTML(icon('bag', 28), 'Geen aankopen', 'Typ hieronder wat je moet kopen en tik op de plus.')
+    : '<ul class="item-list">' + state.purchases.map(purchaseRowHTML).join('') + '</ul>';
+  return (
+    '<div class="view-pad">' +
+      '<form class="add-form" data-action="submit-add-purchase">' +
+        '<div class="add-form-main">' +
+          '<input class="text-input" name="name" placeholder="Wat moet je kopen?" autocomplete="off" />' +
+          '<button class="btn-primary square" type="submit">' + icon('plus', 20) + '</button>' +
+        '</div>' +
+        '<div class="add-form-extra">' +
+          '<input class="text-input small" name="amount" placeholder="Aantal (optioneel)" inputmode="numeric" autocomplete="off" />' +
+          '<input class="text-input small" name="weight" placeholder="Gewicht (bv. 500g)" autocomplete="off" />' +
+        '</div>' +
+      '</form>' +
+      itemsHTML +
+    '</div>'
+  );
+}
+
+function purchaseLogRowHTML(item) {
+  const buyer = memberById(item.boughtBy);
+  const meta = [itemMeta(item), buyer ? ('door ' + buyer.name) : null].filter(Boolean).join(' · ');
+  return (
+    '<li class="item-row" style="border-left-color:' + (buyer ? buyer.color : 'var(--line)') + '">' +
+      '<div class="item-text"><span class="item-name strike">' + esc(item.name) + '</span>' +
+        (meta ? '<span class="item-sub">' + esc(meta) + '</span>' : '') +
+      '</div>' +
+      '<button class="icon-btn" data-action="restore-purchase" data-id="' + item.id + '" title="Terugzetten">' + icon('rotate', 17) + '</button>' +
+      '<button class="icon-btn muted" data-action="purge-purchase" data-id="' + item.id + '" title="Definitief verwijderen">' + icon('trash', 16) + '</button>' +
+    '</li>'
+  );
+}
+
+function purchaseLogViewHTML() {
+  if (state.purchaseLog.length === 0) {
+    return '<div class="view-pad">' + emptyStateHTML(icon('rotate', 28), 'Logboek is leeg', 'Wat je aanvinkt als gekocht, verschijnt hier terug.') + '</div>';
+  }
+  return '<div class="view-pad"><ul class="item-list">' + state.purchaseLog.map(purchaseLogRowHTML).join('') + '</ul></div>';
+}
+
+function wishlistViewHTML() {
+  if (!state.wishlistMemberId) {
+    // Member selector
+    const buttons = state.members.map((m) => {
+      const photo = m.wishlistPhoto ? '<img src="' + m.wishlistPhoto + '" alt="" class="wishlist-member-btn-avatar" />' : avatarHTML(m, 56);
+      const hint = !m.wishlistPhoto ? '<div class="wishlist-upload-hint">+</div>' : '';
+      return (
+        '<button class="wishlist-member-btn" data-action="open-wishlist" data-id="' + m.id + '">' +
+          photo +
+          '<span>' + esc(m.name) + '</span>' +
+          hint +
+        '</button>'
+      );
+    }).join('');
+    return '<div class="view-pad"><div class="wishlist-member-grid">' + buttons + '</div></div>';
+  }
+
+  // Member detail
+  const member = memberById(state.wishlistMemberId);
+  const items = state.wishlistItems.filter((i) => i.memberId === state.wishlistMemberId);
+  const itemsHTML = items.length === 0
+    ? emptyStateHTML(icon('gift', 28), 'Wensenlijst is leeg', 'Voeg items toe met de knop hieronder.')
+    : '<div class="wishlist-items">' + items.map(wishlistItemRowHTML).join('') + '</div>';
+  
+  const html = (
+    '<div class="view-pad">' +
+      '<div class="wishlist-header-row">' +
+        '<button class="icon-btn" data-action="back-wishlist" aria-label="Terug">' + icon('arrowleft', 20) + '</button>' +
+        (member && member.wishlistPhoto ? '<img src="' + member.wishlistPhoto + '" alt="" class="wishlist-owner-photo" />' : '') +
+        '<h2 class="wishlist-owner-title">' + (member ? esc(member.name) : '') + '</h2>' +
+      '</div>' +
+      '<form class="add-form" data-action="submit-wishlist-item">' +
+        '<div class="add-form-main">' +
+          '<input class="text-input" name="name" placeholder="Productnaam" autocomplete="off" />' +
+          '<button class="btn-primary square" type="submit">' + icon('plus', 20) + '</button>' +
+        '</div>' +
+        '<div class="add-form-extra">' +
+          '<input class="text-input small" name="store" placeholder="Winkel" autocomplete="off" />' +
+          '<input class="text-input small" name="price" placeholder="Prijs" autocomplete="off" />' +
+        '</div>' +
+        '<div class="add-form-extra">' +
+          '<input class="text-input small" name="link" placeholder="Link (optioneel)" autocomplete="off" />' +
+        '</div>' +
+        '<label class="field-label">Foto (optioneel)</label>' +
+        '<div class="row-gap">' +
+          '<input class="text-input" name="photo" placeholder="URL van foto" autocomplete="off" />' +
+          '<button class="btn-secondary" type="button" id="wishlist-photo-upload">' + icon('upload', 16) + '</button>' +
+        '</div>' +
+        '<input id="wishlist-photo-input" type="file" accept="image/*" class="hidden-input" />' +
+      '</form>' +
+      itemsHTML +
+      (state.currentMemberId === state.wishlistMemberId ? '<button class="btn-secondary full" style="margin-top:16px;" data-action="upload-member-photo" data-id="' + state.wishlistMemberId + '">' + icon('upload', 18) + ' Mijn foto</button>' : '') +
+    '</div>'
+  );
+
+  // Wire up photo upload
+  setTimeout(() => {
+    const uploadBtn = document.getElementById('wishlist-photo-upload');
+    const photoInput = document.getElementById('wishlist-photo-input');
+    const photoField = document.querySelector('input[name="photo"]');
+    if (uploadBtn && photoInput && photoField) {
+      uploadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        photoInput.click();
+      });
+      photoInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          photoField.value = reader.result;
+          const form = photoField.closest('form');
+          if (form) form.dataset.photoData = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }, 0);
+
+  return html;
+}
+
+function wishlistItemRowHTML(item) {
+  const thumbHTML = item.photo
+    ? '<img src="' + item.photo + '" alt="" class="wishlist-thumb" />'
+    : '<div class="wishlist-thumb-empty">' + icon('gift', 20) + '</div>';
+  const priceHTML = item.price ? '<span class="wishlist-item-meta">€ ' + esc(item.price) + '</span>' : '';
+  const linkHTML = item.link ? '<a href="' + esc(item.link) + '" class="wishlist-item-meta" target="_blank">Link →</a>' : '';
+  
+  return (
+    '<div class="wishlist-item-row">' +
+      thumbHTML +
+      '<div class="wishlist-item-text">' +
+        '<span class="wishlist-item-name">' + esc(item.name) + '</span>' +
+        (item.store ? '<span class="wishlist-item-meta">' + esc(item.store) + '</span>' : '') +
+        priceHTML +
+        linkHTML +
+      '</div>' +
+      '<div class="wishlist-item-actions">' +
+        '<button class="icon-btn" data-action="edit-wishlist-item" data-id="' + item.id + '" title="Bewerken">' + icon('pencil', 16) + '</button>' +
+        '<button class="icon-btn muted" data-action="delete-wishlist-item" data-id="' + item.id + '" title="Verwijderen">' + icon('trash', 16) + '</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
 function cardButtonHTML(card) {
   const logoHTML = card.logo ? '<img src="' + card.logo + '" alt="" class="loyalty-card-logo" />' : '';
   return (
@@ -456,7 +675,9 @@ function renderNav() {
   document.getElementById('nav-root').innerHTML =
     '<nav class="bottom-nav">' +
       '<button class="nav-btn ' + (state.tab === 'list' ? 'active' : '') + '" data-action="set-tab" data-value="list">' + icon('cart', 20) + 'Boodschappen</button>' +
-      '<button class="nav-btn ' + (state.tab === 'cards' ? 'active' : '') + '" data-action="set-tab" data-value="cards">' + icon('card', 20) + 'Klantenkaarten</button>' +
+      '<button class="nav-btn ' + (state.tab === 'purchases' ? 'active' : '') + '" data-action="set-tab" data-value="purchases">' + icon('bag', 20) + 'Aankopen</button>' +
+      '<button class="nav-btn ' + (state.tab === 'wishlist' ? 'active' : '') + '" data-action="set-tab" data-value="wishlist">' + icon('gift', 20) + 'Wensenlijst</button>' +
+      '<button class="nav-btn ' + (state.tab === 'cards' ? 'active' : '') + '" data-action="set-tab" data-value="cards">' + icon('card', 20) + 'Kaarten</button>' +
     '</nav>';
 }
 
@@ -728,12 +949,104 @@ function cardDetailSheetHTML(sheet) {
   const logoHTML = card.logo ? '<img src="' + card.logo + '" alt="" class="card-detail-logo" />' : '';
   const body =
     '<div class="card-detail">' +
-      logoHTML +
-      '<div id="card-detail-code" class="code-box code-box-detail"></div>' +
+      '<div class="card-detail-code-wrap">' +
+        '<div id="card-detail-code" class="code-box code-box-detail"></div>' +
+        (logoHTML ? '<div style="display:flex;justify-content:center;">' + logoHTML + '</div>' : '') +
+      '</div>' +
       '<button class="btn-secondary full" data-action="edit-card" data-id="' + card.id + '">' + icon('pencil', 17) + ' Kaart bewerken</button>' +
       '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
     '</div>';
   return sheetWrap(card.name, body, true);
+}
+
+function editWishlistItemSheetHTML(item) {
+  const body =
+    '<div class="stack">' +
+      '<label class="field-label">Productnaam</label>' +
+      '<input id="wish-name-input" class="text-input" value="' + esc(item.name) + '" autocomplete="off" />' +
+      '<label class="field-label">Winkel</label>' +
+      '<input id="wish-store-input" class="text-input" value="' + esc(item.store || '') + '" autocomplete="off" />' +
+      '<label class="field-label">Prijs</label>' +
+      '<input id="wish-price-input" class="text-input" value="' + esc(item.price || '') + '" autocomplete="off" />' +
+      '<label class="field-label">Link</label>' +
+      '<input id="wish-link-input" class="text-input" value="' + esc(item.link || '') + '" placeholder="https://..." autocomplete="off" />' +
+      '<label class="field-label">Foto URL</label>' +
+      '<input id="wish-photo-input" class="text-input" value="' + esc(item.photo || '') + '" placeholder="https://..." autocomplete="off" />' +
+      '<button class="btn-primary full" id="save-wish-btn" type="button">Opslaan</button>' +
+    '</div>';
+  return sheetWrap('Item bewerken', body, true);
+}
+
+function wireEditWishlistItemSheet(item) {
+  const saveBtn = document.getElementById('save-wish-btn');
+  saveBtn.addEventListener('click', async () => {
+    const name = document.getElementById('wish-name-input').value.trim();
+    if (!name) return;
+    saveBtn.disabled = true;
+    const store = document.getElementById('wish-store-input').value.trim();
+    const price = document.getElementById('wish-price-input').value.trim();
+    const link = document.getElementById('wish-link-input').value.trim();
+    const photo = document.getElementById('wish-photo-input').value.trim();
+    await updateWishlistItem(item.id, { name, store, price, link, photo });
+    state.sheet = null;
+    renderSheetRoot();
+  });
+}
+
+function uploadMemberPhotoSheetHTML(memberId) {
+  const body =
+    '<div class="stack">' +
+      '<p class="field-label">Upload een foto van jezelf voor je wensenlijst knop</p>' +
+      '<div id="member-photo-preview"></div>' +
+      '<button class="btn-secondary full" type="button" id="member-photo-btn">' + icon('upload', 18) + ' Foto kiezen</button>' +
+      '<input id="member-photo-file" type="file" accept="image/*" class="hidden-input" />' +
+      '<button class="btn-primary full" id="save-member-photo-btn" type="button" style="display:none;">Opslaan</button>' +
+    '</div>';
+  return sheetWrap('Mijn foto', body, true);
+}
+
+function wireUploadMemberPhotoSheet(memberId) {
+  const fileInput = document.getElementById('member-photo-file');
+  const photoBtn = document.getElementById('member-photo-btn');
+  const preview = document.getElementById('member-photo-preview');
+  const saveBtn = document.getElementById('save-member-photo-btn');
+  let photoData = null;
+
+  photoBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 200;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        photoData = canvas.toDataURL('image/png');
+        
+        preview.innerHTML = '<img src="' + photoData + '" alt="" style="width:100%;border-radius:12px;margin-bottom:12px;" />';
+        photoBtn.style.display = 'none';
+        saveBtn.style.display = 'block';
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    if (!photoData) return;
+    saveBtn.disabled = true;
+    await updateMemberPhoto(memberId, photoData);
+    state.sheet = null;
+    renderSheetRoot();
+  });
 }
 
 function renderSheetRoot() {
@@ -761,6 +1074,12 @@ function renderSheetRoot() {
     root.innerHTML = cardDetailSheetHTML(state.sheet);
     const container = document.getElementById('card-detail-code');
     if (container) renderCode(container, state.sheet.card.code, state.sheet.card.codeType, 220);
+  } else if (state.sheet.type === 'editWishlistItem') {
+    root.innerHTML = editWishlistItemSheetHTML(state.sheet.item);
+    wireEditWishlistItemSheet(state.sheet.item);
+  } else if (state.sheet.type === 'uploadMemberPhoto') {
+    root.innerHTML = uploadMemberPhotoSheetHTML(state.sheet.memberId);
+    wireUploadMemberPhotoSheet(state.sheet.memberId);
   }
 }
 
@@ -934,6 +1253,63 @@ async function purgeLogItem(id) {
   await deleteDoc(doc(db, 'shoppingLog', id));
 }
 
+async function addPurchase({ name, amount, weight }) {
+  const cm = currentMember();
+  if (!cm) return;
+  const id = uid();
+  await setDoc(doc(db, 'purchaseItems', id), { name, amount, weight, memberId: cm.id, createdAt: Date.now() });
+}
+
+async function deletePurchase(id) {
+  await deleteDoc(doc(db, 'purchaseItems', id));
+}
+
+async function buyPurchase(id) {
+  const item = state.purchases.find((i) => i.id === id);
+  if (!item) return;
+  const cm = currentMember();
+  await deleteDoc(doc(db, 'purchaseItems', id));
+  await setDoc(doc(db, 'purchaseLog', id), {
+    name: item.name, amount: item.amount, weight: item.weight, memberId: item.memberId,
+    createdAt: item.createdAt, boughtBy: cm ? cm.id : null, boughtAt: Date.now(),
+  });
+}
+
+async function restorePurchase(id) {
+  const logItem = state.purchaseLog.find((i) => i.id === id);
+  if (!logItem) return;
+  await deleteDoc(doc(db, 'purchaseLog', id));
+  await setDoc(doc(db, 'purchaseItems', id), {
+    name: logItem.name, amount: logItem.amount, weight: logItem.weight,
+    memberId: logItem.memberId, createdAt: logItem.createdAt,
+  });
+}
+
+async function purgePurchase(id) {
+  await deleteDoc(doc(db, 'purchaseLog', id));
+}
+
+async function addWishlistItem({ name, store, price, link, photo, memberId }) {
+  const id = uid();
+  const data = { name, store, price, link, memberId, createdAt: Date.now() };
+  if (photo) data.photo = photo;
+  await setDoc(doc(db, 'wishlistItems', id), data);
+}
+
+async function updateWishlistItem(id, { name, store, price, link, photo }) {
+  const data = { name, store, price, link };
+  if (photo !== undefined) data.photo = photo;
+  await setDoc(doc(db, 'wishlistItems', id), data, { merge: true });
+}
+
+async function deleteWishlistItem(id) {
+  await deleteDoc(doc(db, 'wishlistItems', id));
+}
+
+async function updateMemberPhoto(memberId, photo) {
+  await setDoc(doc(db, 'familyMembers', memberId), { wishlistPhoto: photo }, { merge: true });
+}
+
 async function saveNewCard({ name, color, code, codeType, logo }) {
   const id = uid();
   const cm = currentMember();
@@ -969,6 +1345,28 @@ document.body.addEventListener('submit', async (e) => {
     form.reset();
     form.elements['name'].focus();
     await addItem({ name, amount, weight });
+  } else if (e.target.matches && e.target.matches('[data-action="submit-add-purchase"]')) {
+    e.preventDefault();
+    const form = e.target;
+    const name = form.elements['name'].value.trim();
+    if (!name) return;
+    const amount = form.elements['amount'].value.trim();
+    const weight = form.elements['weight'].value.trim();
+    form.reset();
+    form.elements['name'].focus();
+    await addPurchase({ name, amount, weight });
+  } else if (e.target.matches && e.target.matches('[data-action="submit-wishlist-item"]')) {
+    e.preventDefault();
+    const form = e.target;
+    const name = form.elements['name'].value.trim();
+    if (!name) return;
+    const store = form.elements['store'].value.trim();
+    const price = form.elements['price'].value.trim();
+    const link = form.elements['link'].value.trim();
+    const photo = form.dataset.photoData || '';
+    form.reset();
+    form.elements['name'].focus();
+    await addWishlistItem({ name, store, price, link, photo, memberId: state.wishlistMemberId });
   }
 });
 
@@ -1017,6 +1415,11 @@ document.body.addEventListener('click', async (e) => {
       renderSegmented();
       renderView();
       break;
+    case 'set-purchasesub':
+      state.purchaseSub = value;
+      renderSegmented();
+      renderView();
+      break;
     case 'buy-item':
       await buyItem(id);
       break;
@@ -1028,6 +1431,40 @@ document.body.addEventListener('click', async (e) => {
       break;
     case 'purge-log':
       await purgeLogItem(id);
+      break;
+    case 'buy-purchase':
+      await buyPurchase(id);
+      break;
+    case 'delete-purchase':
+      await deletePurchase(id);
+      break;
+    case 'restore-purchase':
+      await restorePurchase(id);
+      break;
+    case 'purge-purchase':
+      await purgePurchase(id);
+      break;
+    case 'open-wishlist':
+      state.wishlistMemberId = id;
+      renderApp();
+      break;
+    case 'back-wishlist':
+      state.wishlistMemberId = null;
+      renderApp();
+      break;
+    case 'delete-wishlist-item':
+      await deleteWishlistItem(id);
+      break;
+    case 'edit-wishlist-item': {
+      const item = state.wishlistItems.find((i) => i.id === id);
+      if (!item) return;
+      state.sheet = { type: 'editWishlistItem', item, memberId: state.wishlistMemberId, closable: true };
+      renderSheetRoot();
+      break;
+    }
+    case 'upload-member-photo':
+      state.sheet = { type: 'uploadMemberPhoto', memberId: id, closable: true };
+      renderSheetRoot();
       break;
     case 'open-add-card':
       state.sheet = { type: 'addCard', closable: true };
@@ -1053,7 +1490,7 @@ document.body.addEventListener('click', async (e) => {
   }
 });
 
-const ready = { members: false, items: false, log: false, cards: false };
+const ready = { members: false, items: false, log: false, cards: false, purchases: false, purchaseLog: false, wishlistItems: false };
 function checkReady() {
   if (Object.values(ready).every(Boolean)) {
     document.getElementById('loading-view').style.display = 'none';
@@ -1097,6 +1534,29 @@ function startListeners() {
     checkReady();
     if (state.tab === 'cards') renderView();
   }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'purchaseItems'), (snap) => {
+    state.purchases = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
+    ready.purchases = true;
+    checkReady();
+    renderSegmented();
+    if (state.tab === 'purchases' && state.purchaseSub === 'active') renderView();
+  }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'purchaseLog'), (snap) => {
+    state.purchaseLog = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.boughtAt - a.boughtAt);
+    ready.purchaseLog = true;
+    checkReady();
+    renderSegmented();
+    if (state.tab === 'purchases' && state.purchaseSub === 'log') renderView();
+  }, (err) => showFatalError(err));
+
+  onSnapshot(collection(db, 'wishlistItems'), (snap) => {
+    state.wishlistItems = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
+    ready.wishlistItems = true;
+    checkReady();
+    if (state.tab === 'wishlist') renderView();
+  }, (err) => showFatalError(err));
 }
 
 function showFatalError(err) {
@@ -1114,4 +1574,3 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
-
