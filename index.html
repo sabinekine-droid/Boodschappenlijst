@@ -145,10 +145,15 @@
   .nav-btn.active { color: var(--primary); }
 
   .sheet-backdrop { position: fixed; inset: 0; background: rgba(36,53,43,0.35); display: flex; align-items: flex-end; z-index: 40; }
+  .sheet-backdrop.top-align { align-items: flex-start; }
   .sheet {
     background: var(--bg); width: 100%; max-width: 480px; margin: 0 auto; border-radius: 20px 20px 0 0;
     padding: 10px 18px 26px; max-height: 86vh; overflow-y: auto;
   }
+  .sheet-backdrop.top-align .sheet {
+    border-radius: 0 0 20px 20px; padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  }
+  .sheet-backdrop.top-align .sheet-handle { display: none; }
   .sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 10px; }
   .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .sheet-header h2 { font-size: 18px; color: var(--primary-dark); }
@@ -206,8 +211,8 @@
     image-rendering: crisp-edges;
   }
   .code-box-detail { 
-    padding: 32px 24px; 
-    min-height: 200px; 
+    padding: 20px 16px; 
+    min-height: 140px; 
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -311,7 +316,22 @@ function itemMeta(item) {
   const parts = [];
   if (item.amount) parts.push(item.amount + 'x');
   if (item.weight) parts.push(item.weight);
+  if (item.store) parts.push(item.store);
   return parts.join(' · ');
+}
+function storeOptions() {
+  const base = ['Delhaize', 'Okay', 'Lidl'];
+  const seen = new Set(base.map((s) => s.toLowerCase()));
+  const names = base.slice();
+  state.cards.forEach((c) => {
+    const trimmed = (c.name || '').trim();
+    if (!trimmed || trimmed.toLowerCase() === 'extra') return;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    names.push(trimmed);
+  });
+  return names;
 }
 function textColorFor(bgHex) {
   const c = (bgHex || '#3F6B4F').replace('#', '');
@@ -430,6 +450,7 @@ function listViewHTML() {
   const itemsHTML = state.items.length === 0
     ? emptyStateHTML(icon('cart', 28), 'Niets op de lijst', 'Typ hieronder iets dat je nodig hebt en tik op de plus.')
     : '<ul class="item-list">' + state.items.map(itemRowHTML).join('') + '</ul>';
+  const storeOptsHTML = storeOptions().map((s) => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
   return (
     '<div class="view-pad">' +
       '<form class="add-form" data-action="submit-add-item">' +
@@ -440,6 +461,12 @@ function listViewHTML() {
         '<div class="add-form-extra">' +
           '<input class="text-input small" name="amount" placeholder="Aantal (optioneel)" inputmode="numeric" autocomplete="off" />' +
           '<input class="text-input small" name="weight" placeholder="Gewicht (bv. 500g)" autocomplete="off" />' +
+        '</div>' +
+        '<div class="add-form-extra">' +
+          '<select class="text-input small" name="store">' +
+            '<option value="">Winkel (optioneel)</option>' +
+            storeOptsHTML +
+          '</select>' +
         '</div>' +
       '</form>' +
       itemsHTML +
@@ -646,9 +673,9 @@ function renderApp() {
   renderNav();
 }
 
-function sheetWrap(titleText, bodyHTML, closable) {
+function sheetWrap(titleText, bodyHTML, closable, variant) {
   return (
-    '<div class="sheet-backdrop">' +
+    '<div class="sheet-backdrop' + (variant ? ' ' + variant : '') + '">' +
       '<div class="sheet">' +
         '<div class="sheet-handle"></div>' +
         (titleText ? (
@@ -914,7 +941,7 @@ function cardDetailSheetHTML(sheet) {
       '<button class="btn-secondary full" data-action="edit-card" data-id="' + card.id + '">' + icon('pencil', 17) + ' Kaart bewerken</button>' +
       '<button class="btn-danger full" data-action="delete-card" data-id="' + card.id + '">' + icon('trash', 17) + ' Kaart verwijderen</button>' +
     '</div>';
-  return sheetWrap(card.name, body, true);
+  return sheetWrap(card.name, body, true, 'top-align');
 }
 
 function editWishlistItemSheetHTML(item) {
@@ -1135,7 +1162,7 @@ function renderSheetRoot() {
   } else if (state.sheet.type === 'cardDetail') {
     root.innerHTML = cardDetailSheetHTML(state.sheet);
     const container = document.getElementById('card-detail-code');
-    if (container) renderCode(container, state.sheet.card.code, state.sheet.card.codeType, 220);
+    if (container) renderCode(container, state.sheet.card.code, state.sheet.card.codeType, 160);
   } else if (state.sheet.type === 'editWishlistItem') {
     root.innerHTML = editWishlistItemSheetHTML(state.sheet.item);
     wireEditWishlistItemSheet(state.sheet.item);
@@ -1282,11 +1309,11 @@ async function createMember(name, color) {
   await pickMember(id);
 }
 
-async function addItem({ name, amount, weight }) {
+async function addItem({ name, amount, weight, store }) {
   const cm = currentMember();
   if (!cm) return;
   const id = uid();
-  await setDoc(doc(db, 'shoppingItems', id), { name, amount, weight, memberId: cm.id, createdAt: Date.now() });
+  await setDoc(doc(db, 'shoppingItems', id), { name, amount, weight, store: store || '', memberId: cm.id, createdAt: Date.now() });
 }
 
 async function deleteItem(id) {
@@ -1407,9 +1434,10 @@ document.body.addEventListener('submit', async (e) => {
     if (!name) return;
     const amount = form.elements['amount'].value.trim();
     const weight = form.elements['weight'].value.trim();
+    const store = form.elements['store'].value;
     form.reset();
     form.elements['name'].focus();
-    await addItem({ name, amount, weight });
+    await addItem({ name, amount, weight, store });
   } else if (e.target.matches && e.target.matches('[data-action="submit-add-purchase"]')) {
     e.preventDefault();
     const form = e.target;
@@ -1589,7 +1617,7 @@ function startListeners() {
     state.cards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     ready.cards = true;
     checkReady();
-    if (state.tab === 'cards') renderView();
+    if (state.tab === 'cards' || state.tab === 'list') renderView();
   }, (err) => showFatalError(err));
 
   onSnapshot(collection(db, 'purchaseItems'), (snap) => {
