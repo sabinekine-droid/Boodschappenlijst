@@ -1031,18 +1031,17 @@ function addShoppingItemSheetHTML() {
     '<div class="stack">' +
       '<label class="field-label">Naam</label>' +
       '<input id="add-item-name-input" class="text-input" placeholder="Wat heb je nodig?" autocomplete="off" />' +
-      '<label class="field-label">Aantal (optioneel)</label>' +
-      '<input id="add-item-amount-input" class="text-input" placeholder="Aantal (optioneel)" inputmode="numeric" autocomplete="off" />' +
-      '<label class="field-label">Gewicht (optioneel)</label>' +
-      '<input id="add-item-weight-input" class="text-input" placeholder="Gewicht (bv. 500g)" autocomplete="off" />' +
-      '<label class="field-label">Winkel (optioneel)</label>' +
+      '<div class="add-form-extra">' +
+        '<input id="add-item-amount-input" class="text-input small" placeholder="Aantal (optioneel)" inputmode="numeric" autocomplete="off" />' +
+        '<input id="add-item-weight-input" class="text-input small" placeholder="Gewicht (bv. 500g)" autocomplete="off" />' +
+      '</div>' +
       '<select id="add-item-store-input" class="text-input">' +
         '<option value="">Winkel (optioneel)</option>' +
         storeOptsHTML +
       '</select>' +
       '<button class="btn-primary full" id="save-item-btn" type="button">Toevoegen</button>' +
     '</div>';
-  return sheetWrap('Item toevoegen', body, true);
+  return sheetWrap('Item toevoegen', body, true, 'top-align');
 }
 
 function wireAddShoppingItemSheet() {
