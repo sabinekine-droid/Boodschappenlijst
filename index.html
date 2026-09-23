@@ -241,16 +241,13 @@
   .wishlist-member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
   .wishlist-member-btn {
     position: relative; aspect-ratio: 1; border: none; border-radius: 14px;
-    background: var(--surface); cursor: pointer; display: flex; flex-direction: column;
+    cursor: pointer; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 8px;
-    box-shadow: 0 2px 8px rgba(36,53,43,0.1); padding: 0;
+    box-shadow: 0 2px 8px rgba(36,53,43,0.1); padding: 0 12px;
   }
-  .wishlist-member-btn-avatar { width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0; }
-  .wishlist-member-btn span { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 14px; color: var(--ink); }
-  .wishlist-upload-hint { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
+  .wishlist-member-btn span { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 16px; color: #fff; text-align: center; }
   .wishlist-header-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; }
   .wishlist-owner-title { flex: 1; font-size: 19px; color: var(--primary-dark); }
-  .wishlist-owner-photo { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
   .wishlist-items { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
   .wishlist-item-row {
     background: var(--surface); border-radius: 12px; padding: 12px;
@@ -571,13 +568,9 @@ function wishlistViewHTML() {
   if (!state.wishlistMemberId) {
     // Member selector
     const buttons = state.members.map((m) => {
-      const photo = m.wishlistPhoto ? '<img src="' + m.wishlistPhoto + '" alt="" class="wishlist-member-btn-avatar" />' : avatarHTML(m, 56);
-      const hint = !m.wishlistPhoto ? '<div class="wishlist-upload-hint">+</div>' : '';
       return (
-        '<button class="wishlist-member-btn" data-action="open-wishlist" data-id="' + m.id + '">' +
-          photo +
+        '<button class="wishlist-member-btn" style="background:' + m.color + ';" data-action="open-wishlist" data-id="' + m.id + '">' +
           '<span>' + esc(m.name) + '</span>' +
-          hint +
         '</button>'
       );
     }).join('');
@@ -595,12 +588,10 @@ function wishlistViewHTML() {
     '<div class="view-pad">' +
       '<div class="wishlist-header-row">' +
         '<button class="icon-btn" data-action="back-wishlist" aria-label="Terug">' + icon('arrowleft', 20) + '</button>' +
-        (member && member.wishlistPhoto ? '<img src="' + member.wishlistPhoto + '" alt="" class="wishlist-owner-photo" />' : '') +
         '<h2 class="wishlist-owner-title">' + (member ? esc(member.name) : '') + '</h2>' +
         '<button class="btn-primary square" data-action="open-add-wishlist-item" data-id="' + state.wishlistMemberId + '" aria-label="Item toevoegen">' + icon('plus', 20) + '</button>' +
       '</div>' +
       itemsHTML +
-      (state.currentMemberId === state.wishlistMemberId ? '<button class="btn-secondary full" style="margin-top:16px;" data-action="upload-member-photo" data-id="' + state.wishlistMemberId + '">' + icon('upload', 18) + ' Mijn foto</button>' : '') +
     '</div>'
   );
 
@@ -1139,62 +1130,6 @@ function wireAddWishlistItemSheet(memberId) {
   });
 }
 
-function uploadMemberPhotoSheetHTML(memberId) {
-  const body =
-    '<div class="stack">' +
-      '<p class="field-label">Upload een foto van jezelf voor je wensenlijst knop</p>' +
-      '<div id="member-photo-preview"></div>' +
-      '<button class="btn-secondary full" type="button" id="member-photo-btn">' + icon('upload', 18) + ' Foto kiezen</button>' +
-      '<input id="member-photo-file" type="file" accept="image/*" class="hidden-input" />' +
-      '<button class="btn-primary full" id="save-member-photo-btn" type="button" style="display:none;">Opslaan</button>' +
-    '</div>';
-  return sheetWrap('Mijn foto', body, true);
-}
-
-function wireUploadMemberPhotoSheet(memberId) {
-  const fileInput = document.getElementById('member-photo-file');
-  const photoBtn = document.getElementById('member-photo-btn');
-  const preview = document.getElementById('member-photo-preview');
-  const saveBtn = document.getElementById('save-member-photo-btn');
-  let photoData = null;
-
-  photoBtn.addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const maxDim = 200;
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        photoData = canvas.toDataURL('image/png');
-        
-        preview.innerHTML = '<img src="' + photoData + '" alt="" style="width:100%;border-radius:12px;margin-bottom:12px;" />';
-        photoBtn.style.display = 'none';
-        saveBtn.style.display = 'block';
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  saveBtn.addEventListener('click', async () => {
-    if (!photoData) return;
-    saveBtn.disabled = true;
-    await updateMemberPhoto(memberId, photoData);
-    state.sheet = null;
-    renderSheetRoot();
-  });
-}
-
 function renderSheetRoot() {
   const root = document.getElementById('sheet-root');
   if (!state.sheet) { root.innerHTML = ''; return; }
@@ -1223,9 +1158,6 @@ function renderSheetRoot() {
   } else if (state.sheet.type === 'editWishlistItem') {
     root.innerHTML = editWishlistItemSheetHTML(state.sheet.item);
     wireEditWishlistItemSheet(state.sheet.item);
-  } else if (state.sheet.type === 'uploadMemberPhoto') {
-    root.innerHTML = uploadMemberPhotoSheetHTML(state.sheet.memberId);
-    wireUploadMemberPhotoSheet(state.sheet.memberId);
   } else if (state.sheet.type === 'addShoppingItem') {
     root.innerHTML = addShoppingItemSheetHTML();
     wireAddShoppingItemSheet();
@@ -1458,10 +1390,6 @@ async function deleteWishlistItem(id) {
   await deleteDoc(doc(db, 'wishlistItems', id));
 }
 
-async function updateMemberPhoto(memberId, photo) {
-  await setDoc(doc(db, 'familyMembers', memberId), { wishlistPhoto: photo }, { merge: true });
-}
-
 async function saveNewCard({ name, color, code, codeType, logo }) {
   const id = uid();
   const cm = currentMember();
@@ -1592,10 +1520,6 @@ document.body.addEventListener('click', async (e) => {
       renderSheetRoot();
       break;
     }
-    case 'upload-member-photo':
-      state.sheet = { type: 'uploadMemberPhoto', memberId: id, closable: true };
-      renderSheetRoot();
-      break;
     case 'open-add-shopping-item':
       state.sheet = { type: 'addShoppingItem', closable: true };
       renderSheetRoot();
@@ -1712,4 +1636,3 @@ if (firebaseReady) {
 </script>
 </body>
 </html>
-
