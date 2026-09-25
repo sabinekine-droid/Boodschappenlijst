@@ -146,6 +146,11 @@
     font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--ink-muted); padding: 6px 0; cursor: pointer;
   }
   .nav-btn.active { color: var(--primary); }
+  .nav-icon-wrap { position: relative; display: inline-flex; }
+  .nav-badge-dot {
+    position: absolute; top: -2px; right: -4px; width: 9px; height: 9px;
+    background: #e04b4b; border-radius: 50%; border: 1.5px solid var(--surface);
+  }
 
   .sheet-backdrop { position: fixed; inset: 0; background: rgba(36,53,43,0.35); display: flex; align-items: flex-end; z-index: 40; }
   .sheet-backdrop.top-align { align-items: flex-start; }
@@ -347,6 +352,7 @@ const state = {
   members: [], items: [], log: [], cards: [],
   purchases: [], purchaseLog: [],
   currentMemberId: localStorage.getItem('current-member-id') || null,
+  lastSeenList: parseInt(localStorage.getItem('last-seen-list') || '0', 10),
   tab: 'list', listSub: 'active', purchaseSub: 'active',
   sheet: null,
 };
@@ -575,10 +581,20 @@ function cardsViewHTML() {
   );
 }
 
+function markListSeen() {
+  state.lastSeenList = Date.now();
+  localStorage.setItem('last-seen-list', String(state.lastSeenList));
+}
+
+function hasUnseenListItems() {
+  return state.items.some((i) => i.createdAt > state.lastSeenList && i.memberId !== state.currentMemberId);
+}
+
 function renderNav() {
+  const listDot = state.tab !== 'list' && hasUnseenListItems() ? '<span class="nav-badge-dot"></span>' : '';
   document.getElementById('nav-root').innerHTML =
     '<nav class="bottom-nav">' +
-      '<button class="nav-btn ' + (state.tab === 'list' ? 'active' : '') + '" data-action="set-tab" data-value="list">' + icon('cart', 20) + 'Boodschappen</button>' +
+      '<button class="nav-btn ' + (state.tab === 'list' ? 'active' : '') + '" data-action="set-tab" data-value="list"><span class="nav-icon-wrap">' + icon('cart', 20) + listDot + '</span>Boodschappen</button>' +
       '<button class="nav-btn ' + (state.tab === 'purchases' ? 'active' : '') + '" data-action="set-tab" data-value="purchases">' + icon('bag', 20) + 'Aankopen</button>' +
       '<button class="nav-btn ' + (state.tab === 'cards' ? 'active' : '') + '" data-action="set-tab" data-value="cards">' + icon('card', 20) + 'Kaarten</button>' +
     '</nav>';
@@ -1217,6 +1233,7 @@ document.body.addEventListener('click', async (e) => {
       break;
     case 'set-tab':
       state.tab = value;
+      if (value === 'list') markListSeen();
       renderApp();
       break;
     case 'set-listsub':
@@ -1307,7 +1324,9 @@ function startListeners() {
     state.items = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
     ready.items = true;
     checkReady();
+    if (state.tab === 'list') markListSeen();
     renderSegmented();
+    renderNav();
     if (state.tab === 'list' && state.listSub === 'active') renderView();
   }, (err) => showFatalError(err));
 
